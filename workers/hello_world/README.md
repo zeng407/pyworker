@@ -17,7 +17,7 @@ Both of these endpoints take the same API JSON payload:
 }
 ```
 
-We want the PyWorker to also expose two endpoints, for each of the above endpoints.
+We want the PyWorker to also expose two endpoints that correspond to the above endpoints.
 
 ### Structure
 
