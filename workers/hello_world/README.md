@@ -2,7 +2,7 @@
 
 ## Hello_world example
 
-There is a hello_world PyWorker implantation under `workers/hello_world`. This PyWorker is
+There is a hello_world PyWorker implementation under `workers/hello_world`. This PyWorker is
 created for an LLM model server that runs on port 5001 has two API endpoints:
 
 1. `/generate`: generates an full response to the prompt and sends a JSON response
