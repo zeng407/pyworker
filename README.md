@@ -67,9 +67,6 @@ To integrate PyWorker with a model server not already supported, you need to cre
 
 **For a detailed walkthrough, refer to the `hello_world` example:** [workers/hello_world/README.md](workers/hello_world/README.md)
 
-**For more complex examples, see:**
-*   [ComfyUI Worker](workers/comfyui/README.md)
-*   [TGI Worker](workers/tgi/README.md)
 
 **Type Hinting:** It is strongly recommended to use strict type hinting throughout your implementation. Use `pyright` to check for type errors.
 
