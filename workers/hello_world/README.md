@@ -2,7 +2,7 @@
 
 ## Hello_world example
 
-There is a hello_world PyWorker implantation under `workers/hello_world`. This PyWorker is
+There is a hello_world PyWorker implementation under `workers/hello_world`. This PyWorker is
 created for an LLM model server that runs on port 5001 has two API endpoints:
 
 1. `/generate`: generates an full response to the prompt and sends a JSON response
@@ -40,10 +40,17 @@ This will allow your IDE or VSCode with `pyright` plugin to find any type errors
 You can also install `pyright` with `sudo npm install -g pyright` and run `pyright` in the root of the project to find
 any type errors.
 
-#### data_Types.py
+### data_types.py: Contains data types representing model API endpoints
 
-data classes representing the model API are defined here. They must inherit from
-`lib.data_types.ApiPayload`. `ApiPayload` is an abstract class and you need to define several functions for it:
+This file defines the structure of the data your model server expects (its API contract) and, critically, how PyWorker *interprets* that data for autoscaling purposes. You define Python data classes that mirror the JSON payloads your model's API uses.
+
+These classes **must** inherit from `lib.data_types.ApiPayload`. This inheritance is not just for structure; it's how PyWorker knows how to:
+
+*   **Parse Incoming Requests:** Convert JSON from clients into usable Python objects.
+*   **Calculate Workload:** Determine the computational cost of a request.
+*   **Generate Test Data:** Create realistic inputs for benchmarking.
+*   **Format Requests for the Model Server:** Prepare data for the underlying model.
+
 
 ```python
 import dataclasses
@@ -105,12 +112,27 @@ class InputData(ApiPayload):
 
 ```
 
-#### server.py
+### server.py: Creating Your Model's API Endpoints
 
-For every model API endpoint you want to use, you must implement an `EndpointHandler`. This class handles incoming
-requests, processes them, sends them to the model API server, and finally returns an HTTP response.
-`EndpointHandler` has several abstract functions that must be implemented. Here, we implement two, one
-for `/generate`, and one for `/generate_stream`:
+This section guides you through creating the core of your custom model API: the `EndpointHandler`.  Think of `EndpointHandler` as the bridge between incoming requests from users and your underlying model.  It's the key to making your model accessible and scalable.
+
+**Why use an `EndpointHandler`?**
+
+*   **Organized Request Handling:** It provides a structured way to handle different types of requests (like generating text, generating images, or performing other model-specific tasks).
+*   **Scalability:** By separating request handling from the model itself, you can easily scale your API to handle many concurrent users.
+*   **Flexibility:** You can customize how requests are processed, validated, and transformed before being sent to your model.
+*   **Standard Interface:** It provides a consistent interface for interacting with your model, regardless of the underlying implementation.
+
+For every model API endpoint you want to expose (e.g., `/generate`, `/generate_stream`), you'll implement an `EndpointHandler`. This class is responsible for:
+The `EndpointHandler` achieves this through several key methods:
+
+*   **Receiving and validating incoming requests (`get_data_from_request`):** This method ensures the request contains the necessary data (authentication and payload) and is in the correct format. It's the entry point for all requests.
+*   **Defining the endpoint (`endpoint`):**  This method specifies the URL endpoint on the model API server where requests will be sent (e.g., `/generate`).
+*   **Specifying the payload type (`payload_cls`):** This method indicates the specific `ApiPayload` class used for this endpoint, defining the structure of the request data.
+*   **Creating benchmark payloads (`make_benchmark_payload`):**  This method creates payloads specifically for benchmarking the model's performance.
+*   **Handling the model's response (`generate_client_response`):** This method takes the response from the model API server and transforms it into the format expected by the client making the request to your PyWorker.  This allows you to customize the output as needed.
+
+The `EndpointHandler` class has several abstract functions that you *must* implement to define the behavior of your specific endpoints.  Here, we'll implement two common endpoints: `/generate` (for synchronous requests) and `/generate_stream` (for streaming responses):
 
 ```python
 
@@ -278,7 +300,7 @@ if __name__ == "__main__":
     start_server(backend, routes)
 ```
 
-#### test_load.py
+### test_load.py
 
 Here you can create a script that allows you test an endpoint group running instances with this PyWorker
 
