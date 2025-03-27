@@ -40,7 +40,7 @@ This will allow your IDE or VSCode with `pyright` plugin to find any type errors
 You can also install `pyright` with `sudo npm install -g pyright` and run `pyright` in the root of the project to find
 any type errors.
 
-#### data_types.py: Contains data types representing model API endpoints
+### data_types.py: Contains data types representing model API endpoints
 
 This file defines the structure of the data your model server expects (its API contract) and, critically, how PyWorker *interprets* that data for autoscaling purposes. You define Python data classes that mirror the JSON payloads your model's API uses.
 
@@ -112,7 +112,7 @@ class InputData(ApiPayload):
 
 ```
 
-#### server.py: Creating Your Model's API Endpoints
+### server.py: Creating Your Model's API Endpoints
 
 This section guides you through creating the core of your custom model API: the `EndpointHandler`.  Think of `EndpointHandler` as the bridge between incoming requests from users and your underlying model.  It's the key to making your model accessible and scalable.
 
@@ -300,7 +300,7 @@ if __name__ == "__main__":
     start_server(backend, routes)
 ```
 
-#### test_load.py
+### test_load.py
 
 Here you can create a script that allows you test an endpoint group running instances with this PyWorker
 
