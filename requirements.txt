@@ -22,7 +22,7 @@ itsdangerous==2.2.0
 joblib==1.4.2
 MarkupSafe==2.1.5
 multidict==6.0.5
-nltk==3.8.1
+nltk==3.9.0
 Nuitka==2.3.11
 numpy==2.0.0
 ordered-set==4.1.0
