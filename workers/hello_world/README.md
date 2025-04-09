@@ -17,7 +17,7 @@ Both of these endpoints take the same API JSON payload:
 }
 ```
 
-We want the PyWorker to also expose two endpoints, for each of the above endpoints.
+We want the PyWorker to also expose two endpoints that correspond to the above endpoints.
 
 ### Structure
 
@@ -30,7 +30,6 @@ All PyWorkers have four files:
         ├── __init__.py
         ├── data_types.py # contains data types representing model API endpoints
         ├── server.py # contains endpoint handlers
-        ├── client.py # a script to call an endpoint through the autoscaler
         └── test_load.py # script for load testing
 
 ```
