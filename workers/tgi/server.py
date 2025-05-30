@@ -14,7 +14,7 @@ from .data_types import InputData
 MODEL_SERVER_URL = "http://0.0.0.0:5001"
 
 # This is the last log line that gets emitted once comfyui+extensions have been fully loaded
-MODEL_SERVER_START_LOG_MSG = '"message":"Connected","target":"text_generation_router"'
+MODEL_SERVER_START_LOG_MSG = ['"message":"Connected","target":"text_generation_router"', '"message":"Connected","target":"text_generation_router::server"']
 MODEL_SERVER_ERROR_LOG_MSGS = ["Error: WebserverFailed", "Error: DownloadError", "Error: ShardCannotStart"]
 
 
@@ -33,6 +33,10 @@ class GenerateHandler(EndpointHandler[InputData]):
     def endpoint(self) -> str:
         return "/generate"
 
+    @property
+    def healthcheck_endpoint(self) -> str:
+        return f"{MODEL_SERVER_URL}/health"
+    
     @classmethod
     def payload_cls(cls) -> Type[InputData]:
         return InputData
@@ -58,7 +62,11 @@ class GenerateStreamHandler(EndpointHandler[InputData]):
     @property
     def endpoint(self) -> str:
         return "/generate_stream"
-
+    
+    @property
+    def healthcheck_endpoint(self) -> str:
+        return f"{MODEL_SERVER_URL}/health"
+    
     @classmethod
     def payload_cls(cls) -> Type[InputData]:
         return InputData
@@ -91,7 +99,10 @@ backend = Backend(
     allow_parallel_requests=True,
     benchmark_handler=GenerateHandler(benchmark_runs=3, benchmark_words=256),
     log_actions=[
-        (LogAction.ModelLoaded, MODEL_SERVER_START_LOG_MSG),
+         *[
+            (LogAction.ModelLoaded, info_msg)
+            for info_msg in MODEL_SERVER_START_LOG_MSG
+        ],
         (LogAction.Info, '"message":"Download'),
         *[
             (LogAction.ModelError, error_msg)

@@ -22,13 +22,14 @@ class JsonDataException(Exception):
     def __init__(self, json_msg: Dict[str, Any]):
         self.message = json_msg
 
+ApiPayload_T = TypeVar("ApiPayload_T", bound="ApiPayload")
 
 @dataclass
 class ApiPayload(ABC):
 
     @classmethod
     @abstractmethod
-    def for_test(cls) -> "ApiPayload":
+    def for_test(cls: Type[ApiPayload_T]) -> ApiPayload_T:
         """defines how create a payload for load testing"""
         pass
 
@@ -44,7 +45,7 @@ class ApiPayload(ABC):
 
     @classmethod
     @abstractmethod
-    def from_json_msg(cls, json_msg: Dict[str, Any]) -> "ApiPayload":
+    def from_json_msg(cls: Type[ApiPayload_T], json_msg: Dict[str, Any]) -> ApiPayload_T:
         """
         defines how to create an API payload from a JSON message,
         it should throw an JsonDataException if there are issues with some fields
@@ -83,7 +84,6 @@ class AuthData:
         )
 
 
-ApiPayload_T = TypeVar("ApiPayload_T", bound=ApiPayload)
 
 
 @dataclass
@@ -101,6 +101,13 @@ class EndpointHandler(ABC, Generic[ApiPayload_T]):
     def endpoint(self) -> str:
         """the endpoint on the model API"""
         pass
+
+    @property
+    @abstractmethod
+    def healthcheck_endpoint(self) -> Optional[str]:
+        """the endpoint on the model API that is used for healthchecks"""
+        pass
+
 
     @classmethod
     @abstractmethod
@@ -127,7 +134,8 @@ class EndpointHandler(ABC, Generic[ApiPayload_T]):
         cls, req_data: Dict[str, Any]
     ) -> Tuple[AuthData, ApiPayload_T]:
         errors = {}
-        auth_data = payload = None
+        auth_data: Optional[AuthData] = None
+        payload: Optional[ApiPayload_T] = None
         try:
             if "auth_data" in req_data:
                 auth_data = AuthData.from_json_msg(req_data["auth_data"])
@@ -137,7 +145,8 @@ class EndpointHandler(ABC, Generic[ApiPayload_T]):
             errors["auth_data"] = e.message
         try:
             if "payload" in req_data:
-                payload = cls.payload_cls().from_json_msg(req_data["payload"])
+                payload_cls = cls.payload_cls()
+                payload = payload_cls.from_json_msg(req_data["payload"])
             else:
                 errors["payload"] = "field missing"
         except JsonDataException as e:

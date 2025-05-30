@@ -186,8 +186,33 @@ class Backend:
             log.debug(f"Exception in main handler loop {e}")
             return web.Response(status=500)
 
+
+    async def __healthcheck(self):
+        health_check_url = self.benchmark_handler.healthcheck_endpoint
+        if health_check_url is None:
+            log.debug("No healthcheck endpoint defined, skipping healthcheck")
+            return
+        await sleep(5)
+        try:
+            log.debug(f"Performing healthcheck on {health_check_url}")
+            async with self.session.get(health_check_url) as response:
+                if response.status == 200:
+                    log.debug("Healthcheck successful")
+                elif response.status == 503:
+                    log.debug(f"Healthcheck failed with status: {response.status}")
+                    self.backend_errored(f"Healthcheck failed with status: {response.status}")
+                else:
+                    # endpoint not ready yet so bail
+                    log.debug(
+                        f"Healthcheck Endpoint not ready: {response.status}"
+                    )
+        except Exception as e:
+            log.debug(f"Healthcheck failed with exception: {e}")
+            self.backend_errored(str(e))
+
+
     async def _start_tracking(self) -> None:
-        await gather(self.__read_logs(), self.metrics._send_metrics_loop())
+        await gather(self.__read_logs(), self.metrics._send_metrics_loop(), self.__healthcheck())
 
     def backend_errored(self, msg: str) -> None:
         self.metrics._model_errored(msg)

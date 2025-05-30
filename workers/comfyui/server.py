@@ -2,7 +2,7 @@ import os
 import logging
 import dataclasses
 import base64
-from typing import Union, Type
+from typing import Optional, Union, Type
 
 from aiohttp import web, ClientResponse
 from anyio import open_file
@@ -69,7 +69,11 @@ class DefaultComfyWorkflowHandler(EndpointHandler[DefaultComfyWorkflowData]):
     @property
     def endpoint(self) -> str:
         return "/runsync"
-
+    
+    @property
+    def healthcheck_endpoint(self) -> Optional[str]:
+        return None
+    
     @classmethod
     def payload_cls(cls) -> Type[DefaultComfyWorkflowData]:
         return DefaultComfyWorkflowData
@@ -89,7 +93,11 @@ class CustomComfyWorkflowHandler(EndpointHandler[CustomComfyWorkflowData]):
     @property
     def endpoint(self) -> str:
         return "/runsync"
-
+    
+    @property
+    def healthcheck_endpoint(self) -> Optional[str]:
+        return None
+    
     @classmethod
     def payload_cls(cls) -> Type[CustomComfyWorkflowData]:
         return CustomComfyWorkflowData
