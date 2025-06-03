@@ -46,7 +46,7 @@ env | grep _ >> /etc/environment;
 
 if [ ! -d "$ENV_PATH" ]
 then
-    apt install -y python3.12-venv
+    apt install -y python3.10-venv
     echo "setting up venv"
     git clone https://github.com/vast-ai/pyworker "$SERVER_DIR"
 
