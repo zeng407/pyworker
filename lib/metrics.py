@@ -5,7 +5,6 @@ import json
 from asyncio import sleep
 from dataclasses import dataclass, asdict, field
 from functools import cache
-from urllib.parse import urljoin
 
 import requests
 
@@ -119,7 +118,7 @@ class Metrics:
 
         def send_data(report_addr: str) -> None:
             data = compute_autoscaler_data()
-            full_path = urljoin(report_addr, "/worker_status/")
+            full_path = report_addr.rstrip("/") + "/worker_status/"
             log.debug(
                 "\n".join(
                     [
