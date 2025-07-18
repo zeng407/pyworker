@@ -124,7 +124,12 @@ class CompletionsData(GenericData):
         if not model:
             raise ValueError("MODEL_NAME environment variable not set")
 
-        test_input = {"model": model, "prompt": prompt, "temperature": 0.7}
+        test_input = {
+            "model": model,
+            "prompt": prompt,
+            "temperature": 0.7,
+            "max_tokens": 500,
+        }
         return cls(input=test_input)
 
 
@@ -158,6 +163,7 @@ class ChatCompletionsData(GenericData):
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
+            "max_tokens": 500,
         }
         return cls(input=test_input)
 
