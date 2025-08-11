@@ -17,6 +17,24 @@ class Endpoint:
     """
 
     @staticmethod
+    def get_autoscaler_server_url(instance: str) -> str:
+        endpoints = {
+            "alpha": "run-alpha",
+            "candidate": "run-candidate",
+            "prod": "run",
+        }
+        return f"https://{endpoints[instance]}.vast.ai/"
+
+    @staticmethod
+    def get_server_url(instance: str) -> str:
+        endpoints = {
+            "alpha": "alpha",
+            "candidate": "candidate",
+            "prod": "console",
+        }
+        return f"https://{endpoints[instance]}.vast.ai/api/v0/endptjobs/"
+
+    @staticmethod
     def get_endpoint_api_key(
         endpoint_name: str, account_api_key: str, instance: str
     ) -> Optional[str]:
@@ -30,18 +48,13 @@ class Endpoint:
         Returns:
             Endpoint API key if successful, None otherwise
         """
-        endpoints = {
-            "alpha": "alpha",
-            "candidate": "candidate",
-            "prod": "console",
-        }
-        vast_console_url = f"https://{endpoints[instance]}.vast.ai/api/v0/endptjobs/"
         headers = {"Authorization": f"Bearer {account_api_key}"}
 
         try:
             log.debug(f"Fetching endpoint API key for endpoint: {endpoint_name}")
             response = requests.get(
-                f"{vast_console_url}?autoscaler_instance={instance}", headers=headers
+                f"{Endpoint.get_server_url(instance)}?autoscaler_instance={instance}",
+                headers=headers,
             )
 
             if response.status_code != 200:

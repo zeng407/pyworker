@@ -567,7 +567,7 @@ def main():
         client = APIClient(
             endpoint_group_name=args.endpoint_group_name,
             api_key=args.api_key,
-            server_url=args.server_url,
+            server_url=Endpoint.get_autoscaler_server_url(args.instance),
             endpoint_api_key=endpoint_api_key,
         )
 
