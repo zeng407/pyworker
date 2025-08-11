@@ -30,7 +30,12 @@ class Endpoint:
         Returns:
             Endpoint API key if successful, None otherwise
         """
-        vast_console_url = "https://console.vast.ai/api/v0/endptjobs/"
+        endpoints = {
+            "alpha": "alpha",
+            "candidate": "candidate",
+            "prod": "console",
+        }
+        vast_console_url = f"https://{endpoints[instance]}.vast.ai/api/v0/endptjobs/"
         headers = {"Authorization": f"Bearer {account_api_key}"}
 
         try:
