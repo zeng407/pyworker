@@ -114,7 +114,7 @@ class Metrics:
                 url=self.url,
             )
 
-        def send_data(report_addr: str) -> None:
+        def send_data(report_addr: str) -> bool:
             data = compute_autoscaler_data()
             full_path = report_addr.rstrip("/") + "/worker_status/"
             log.debug(
@@ -129,21 +129,26 @@ class Metrics:
             )
             for attempt in range(1, 4):
                 try:
-                    requests.post(full_path, json=asdict(data), timeout=1)
-                    break
+                    res = requests.post(full_path, json=asdict(data), timeout=1)
+                    res.raise_for_status()
+                    return True
                 except requests.Timeout:
                     log.debug(f"autoscaler status update timed out")
                 except Exception as e:
                     log.debug(f"autoscaler status update failed with error: {e}")
                 time.sleep(2)
                 log.debug(f"retrying autoscaler status update, attempt: {attempt}")
+            log.debug(f"failed to send update through {report_addr}")
+            return False
 
         ###########
 
         self.system_metrics.update_disk_usage()
 
         for report_addr in self.report_addr:
-            send_data(report_addr)
+            success = send_data(report_addr)
+            if success is True:
+                break
         self.update_pending = False
         self.model_metrics.reset()
         self.system_metrics.reset()
