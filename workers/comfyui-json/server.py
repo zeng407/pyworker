@@ -31,7 +31,7 @@ log = logging.getLogger(__file__)
 
 
 async def generate_client_response(
-        self, client_request: web.Request, model_response: ClientResponse
+        client_request: web.Request, model_response: ClientResponse
     ) -> Union[web.Response, web.StreamResponse]:
         # Check if the response is actually streaming based on response headers/content-type
         is_streaming_response = (
