@@ -50,7 +50,7 @@ def call_text2image_workflow(
     payload = {
         "input": {
             "request_id": str(uuid.uuid4()),
-            "modifier": "RawWorkflow",  # or whatever your Text2Image modifier is called
+            "modifier": "Text2Image",
             "modifications": {
                 "prompt": "a beautiful landscape with mountains and lakes",
                 "width": 1024,
@@ -73,7 +73,7 @@ def call_text2image_workflow(
         verify=get_cert_file_path(),
     )
     response.raise_for_status()
-    print_truncate_res(str(response.json()))
+    print(str(response.json()))
 
 
 if __name__ == "__main__":
