@@ -41,20 +41,33 @@ echo_var DEBUG_LOG
 echo_var PYWORKER_LOG
 echo_var MODEL_LOG
 
-env | grep _ >> /etc/environment;
-
+# Populate /etc/environment with quoted values
+if ! grep -q "VAST" /etc/environment; then
+    env -0 | grep -zEv "^(HOME=|SHLVL=)|CONDA" | while IFS= read -r -d '' line; do
+            name=${line%%=*}
+            value=${line#*=}
+            printf '%s="%s"\n' "$name" "$value"
+        done > /etc/environment
+fi
 
 if [ ! -d "$ENV_PATH" ]
 then
     echo "setting up venv"
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    source ~/.local/bin/env
-    git clone https://github.com/vast-ai/pyworker "$SERVER_DIR"
+    if ! which uv; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        source ~/.local/bin/env
+    fi
 
-    uv venv --managed-python "$WORKSPACE_DIR/worker-env" -p 3.10
-    source "$WORKSPACE_DIR/worker-env/bin/activate"
+    # Fork testing
+    git clone "${PYWORKER_REPO:-https://github.com/vast-ai/pyworker}" "$SERVER_DIR"
+    if [[ -n ${PYWORKER_REF:-} ]]; then
+        (cd "$SERVER_DIR" && git checkout "$PYWORKER_REF")
+    fi
 
-    uv pip install -r vast-pyworker/requirements.txt
+    uv venv --managed-python "$ENV_PATH" -p 3.10
+    source "$ENV_PATH/bin/activate"
+
+    uv pip install -r "${SERVER_DIR}/requirements.txt"
 
     touch ~/.no_auto_tmux
 else
