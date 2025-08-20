@@ -86,6 +86,21 @@ class ClientState:
     infer_error: List[str] = field(default_factory=list)
     conn_errors: Counter = field(default_factory=Counter)
 
+    def save_images(self, res_json: Dict[str, Any]):
+        if isinstance(res_json, dict) and "images" in res_json:
+            import os, base64
+            os.makedirs("outputs", exist_ok=True)
+            for idx, img_data in enumerate(res_json["images"]):
+                if img_data.startswith("data:image/"):
+                    header, b64data = img_data.split(",", 1)
+                    ext = header.split("/")[1].split(";")[0]
+                else:
+                    b64data = img_data
+                    ext = "png"
+                out_path = os.path.join("outputs", f"output_{int(time.time())}_{idx}.{ext}")
+                with open(out_path, "wb") as f:
+                    f.write(base64.b64decode(b64data))
+                print(f"Saved image to {out_path}")
 
     def make_call(self):
         self.status = ClientStatus.FetchEndpoint
@@ -137,6 +152,7 @@ class ClientState:
         res_json = response.json()
         res = str(res_json)
 
+        self.save_images(res_json)
         global total_success
         global last_res
         total_success += 1
