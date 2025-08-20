@@ -24,7 +24,7 @@ class ComfyWorkflowData(ApiPayload):
         return cls(
             input={
                 "request_id": f"test-{random.randint(1000, 9999)}",
-                "modifier": "RawWorkflow",
+                "modifier": "Text2Image",
                 "modifications": {
                     "prompt": test_prompt,
                     "width": 1024,
