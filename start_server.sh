@@ -71,7 +71,7 @@ then
 
     touch ~/.no_auto_tmux
 else
-    source ~/.local/bin/env
+    [[ -f ~/.local/bin/env ]] && source ~/.local/bin/env
     source "$WORKSPACE_DIR/worker-env/bin/activate"
     echo "environment activated"
     echo "venv: $VIRTUAL_ENV"
