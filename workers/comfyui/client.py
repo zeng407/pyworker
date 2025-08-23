@@ -125,16 +125,16 @@ def call_custom_workflow_with_images(
 
     # Upload images to server and get their filenames
     def upload_image(img_path):
-        files = {"file": open(img_path, "rb")}
-        data = {"name": Path(img_path).name}
         upload_url = urljoin(url, "/upload/image")
-        resp = requests.post(upload_url, files=files, data=data)
-        resp.raise_for_status()
-        return resp.json()["filename"]
+        with open(img_path, "rb") as f:
+            files = {"file": (Path(img_path).name, f)}
+            resp = requests.post(upload_url, files=files, verify=get_cert_file_path())
+            resp.raise_for_status()
+            return resp.json()["filename"]
 
     user_img_filename = upload_image(user_img)
     style_img_path = styles[style]["img"]
-    style_img_filename = upload_image(style_img_path)
+    style_img_filename = style_img_path
 
     prompt_json["14"]["inputs"]["image"] = user_img_filename
     prompt_json["31"]["inputs"]["image"] = style_img_filename

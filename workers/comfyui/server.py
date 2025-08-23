@@ -1,9 +1,26 @@
 from aiohttp import web
+import os
+import logging
+import dataclasses
+import base64
+from typing import Optional, Union, Type
+
+from aiohttp import web, ClientResponse
+from anyio import open_file
+
+from lib.backend import Backend, LogAction
+from lib.data_types import EndpointHandler
+from lib.server import start_server
+from .data_types import DefaultComfyWorkflowData, CustomComfyWorkflowData
+import time
+import re
+
 # /upload/image endpoint for uploading images to be used as input
 async def handle_upload_image(request):
     reader = await request.multipart()
     field = await reader.next()
     if field is None or field.name != "file":
+        log.debug("Missing file field")
         return web.json_response({"error": "Missing file field"}, status=400)
     filename = field.filename
     # Get the custom name from the form (optional)
@@ -22,21 +39,7 @@ async def handle_upload_image(request):
                 break
             f.write(chunk)
     return web.json_response({"success": True, "filename": filename, "path": save_path})
-import os
-import logging
-import dataclasses
-import base64
-from typing import Optional, Union, Type
 
-from aiohttp import web, ClientResponse
-from anyio import open_file
-
-from lib.backend import Backend, LogAction
-from lib.data_types import EndpointHandler
-from lib.server import start_server
-from .data_types import DefaultComfyWorkflowData, CustomComfyWorkflowData
-import time
-import re
 def decode_and_save_base64_images(workflow_json):
     """
     Find all LoadImage nodes with base64 image strings, decode and save to disk, replace with filename.
