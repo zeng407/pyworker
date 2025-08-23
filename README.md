@@ -81,6 +81,16 @@ python3 -m workers.hello_world.test_load -n 1000 -rps 0.5 -k "$API_KEY" -e "$END
 
 Replace `workers.hello_world.test_load` with the path to your worker's test script and provide your Vast.ai API Key (`-k`) and the target Endpoint Group Name (`-e`). Adjust the number of requests (`-n`) and requests per second (`-rps`) as needed.
 
+## Example Test Commands for ComfyUI Worker
+
+You can test the ComfyUI worker using the following commands. Replace `<YOUR_API_KEY>` with your actual Vast.ai API key and `<ENDPOINT_GROUP_NAME>` with your endpoint group name:
+
+```bash
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "<ENDPOINT_GROUP_NAME>"
+
+python3 -m workers.comfyui.test_load -n 1 -rps 1 -m sd3 -k "<YOUR_API_KEY>" -e "<ENDPOINT_GROUP_NAME>"
+```
+
 ## Community & Support
 
 Join the conversation and get help:

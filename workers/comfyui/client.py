@@ -3,6 +3,10 @@ from urllib.parse import urljoin
 import os
 import base64
 import time
+import json
+import argparse
+from workers.comfyui.prompt_config import styles, room_prompt, common_negative_prompts
+from pathlib import Path
 import requests
 from lib.test_utils import print_truncate_res
 from utils.endpoint_util import Endpoint
@@ -76,8 +80,19 @@ def call_default_workflow(
     save_images(res_json)
 
 
-def call_custom_workflow_for_sd3(
-    endpoint_group_name: str, api_key: str, server_url: str
+
+def build_prompt_str(prompt_list):
+    return ", ".join(f"({text}:{weight})" for text, weight in prompt_list)
+
+def call_custom_workflow_with_images(
+    endpoint_group_name: str,
+    api_key: str,
+    server_url: str,
+    workflow_path: str,
+    user_img: str,
+    style: str,
+    room: str,
+    task_id: str,
 ) -> None:
     WORKER_ENDPOINT = "/custom-workflow"
     COST = 100
@@ -101,59 +116,40 @@ def call_custom_workflow_for_sd3(
         reqnum=message["reqnum"],
         url=message["url"],
     )
-    workflow = {
-        "3": {
-            "inputs": {
-                "seed": 156680208700286,
-                "steps": 20,
-                "cfg": 8,
-                "sampler_name": "euler",
-                "scheduler": "normal",
-                "denoise": 1,
-                "model": ["4", 0],
-                "positive": ["6", 0],
-                "negative": ["7", 0],
-                "latent_image": ["5", 0],
-            },
-            "class_type": "KSampler",
-        },
-        "4": {
-            "inputs": {"ckpt_name": "sd3_medium_incl_clips_t5xxlfp16.safetensors"},
-            "class_type": "CheckpointLoaderSimple",
-        },
-        "5": {
-            "inputs": {"width": 512, "height": 512, "batch_size": 1},
-            "class_type": "EmptyLatentImage",
-        },
-        "6": {
-            "inputs": {
-                "text": "beautiful scenery nature glass bottle landscape, purple galaxy bottle",
-                "clip": ["4", 1],
-            },
-            "class_type": "CLIPTextEncode",
-        },
-        "7": {
-            "inputs": {"text": "text, watermark", "clip": ["4", 1]},
-            "class_type": "CLIPTextEncode",
-        },
-        "8": {
-            "inputs": {"samples": ["3", 0], "vae": ["4", 2]},
-            "class_type": "VAEDecode",
-        },
-        "9": {
-            "inputs": {"filename_prefix": "ComfyUI", "images": ["8", 0]},
-            "class_type": "SaveImage",
-        },
-    }
-    # these values should match the values in the custom workflow above,
-    # they are used to calculate workload
+
+    # Load workflow JSON
+    with open(workflow_path, "r") as f:
+        prompt_json = json.load(f)
+
+
+    # Read and encode images as base64
+    def encode_img_b64(img_path):
+        with open(img_path, "rb") as f:
+            return "data:image/{};base64,".format(Path(img_path).suffix[1:]) + base64.b64encode(f.read()).decode()
+
+    prompt_json["14"]["inputs"]["image"] = encode_img_b64(user_img)
+    style_img_path = styles[style]["img"]
+    prompt_json["31"]["inputs"]["image"] = style_img_path
+
+    # Build positive/negative prompt
+    style_prompts = styles[style]["prompts"]
+    room_pos = room_prompt[room]["positive"]
+    room_neg = room_prompt[room]["negative"]
+    positive_prompt = build_prompt_str(style_prompts + room_pos)
+    negative_prompt = build_prompt_str(room_neg + common_negative_prompts)
+    prompt_json["6"]["inputs"]["text"] = positive_prompt
+    prompt_json["7"]["inputs"]["text"] = negative_prompt
+    prompt_json["49"]["inputs"]["filename_prefix"] = task_id
+
+    # You may want to update custom_fields based on workflow or user input
     custom_fields = dict(
-        steps=20,
-        width=512,
-        height=512,
+        steps=prompt_json["3"]["inputs"].get("steps", 20),
+        width=prompt_json["5"]["inputs"].get("width", 512),
+        height=prompt_json["5"]["inputs"].get("height", 512),
     )
+
     req_data = dict(
-        payload=dict(custom_fields=custom_fields, workflow=workflow),
+        payload=dict(custom_fields=custom_fields, workflow=prompt_json),
         auth_data=auth_data,
     )
     url = urljoin(url, WORKER_ENDPOINT)
@@ -169,10 +165,21 @@ def call_custom_workflow_for_sd3(
     save_images(res_json)
 
 
-if __name__ == "__main__":
-    from lib.test_utils import test_args
 
-    args = test_args.parse_args()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="ComfyUI client with image upload and workflow override")
+    parser.add_argument("-k", dest="api_key", type=str, required=True, help="Your vast account API key")
+    parser.add_argument("-e", dest="endpoint_group_name", type=str, required=True, help="Endpoint group name")
+    parser.add_argument("-l", dest="server_url", type=str, default="https://run.vast.ai", help="Server URL")
+    parser.add_argument("-i", dest="instance", type=str, default="prod", help="Autoscaler shard, default: prod")
+    parser.add_argument("--workflow", dest="workflow_path", type=str, required=True, help="Path to workflow JSON")
+    parser.add_argument("--user_img", dest="user_img", type=str, required=True, help="Path to user input image")
+    parser.add_argument("--style", dest="style", type=str, required=True, choices=list(styles.keys()), help="Style (style_eu1, style_jp1, style_country)")
+    parser.add_argument("--room", dest="room", type=str, required=True, choices=list(room_prompt.keys()), help="Room type (living_room, dining_room, ...)")
+    parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID for filename prefix")
+
+    # python3 -m workers.comfyui.client -k ... -e ... --workflow ... --user_img ... --style style_eu1 --room living_room --task_id ...
+    args = parser.parse_args()
     endpoint_api_key = Endpoint.get_endpoint_api_key(
         endpoint_name=args.endpoint_group_name,
         account_api_key=args.api_key,
@@ -180,15 +187,15 @@ if __name__ == "__main__":
     )
     if endpoint_api_key:
         try:
-            call_default_workflow(
-                api_key=endpoint_api_key,
+            call_custom_workflow_with_images(
                 endpoint_group_name=args.endpoint_group_name,
-                server_url=args.server_url,
-            )
-            call_custom_workflow_for_sd3(
                 api_key=endpoint_api_key,
-                endpoint_group_name=args.endpoint_group_name,
                 server_url=args.server_url,
+                workflow_path=args.workflow_path,
+                user_img=args.user_img,
+                style=args.style,
+                room=args.room,
+                task_id=args.task_id,
             )
         except Exception as e:
             log.error(f"Error during API call: {e}")
