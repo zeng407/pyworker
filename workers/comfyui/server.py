@@ -11,6 +11,28 @@ from lib.backend import Backend, LogAction
 from lib.data_types import EndpointHandler
 from lib.server import start_server
 from .data_types import DefaultComfyWorkflowData, CustomComfyWorkflowData
+import time
+import re
+def decode_and_save_base64_images(workflow_json):
+    """
+    Find all LoadImage nodes with base64 image strings, decode and save to disk, replace with filename.
+    """
+    img_pattern = re.compile(r"^data:image/(png|jpeg|jpg);base64,(.*)$", re.IGNORECASE)
+    for node_id, node in workflow_json.items():
+        if node.get("class_type") == "LoadImage":
+            img_val = node.get("inputs", {}).get("image")
+            if isinstance(img_val, str):
+                m = img_pattern.match(img_val)
+                if m:
+                    ext = m.group(1)
+                    b64data = m.group(2)
+                    filename = f"uploaded_{node_id}_{int(time.time())}.{ext}"
+                    filepath = os.path.join("uploads", filename)
+                    os.makedirs("uploads", exist_ok=True)
+                    with open(filepath, "wb") as f:
+                        f.write(base64.b64decode(b64data))
+                    node["inputs"]["image"] = filename
+    return workflow_json
 
 
 MODEL_SERVER_URL = "http://0.0.0.0:38188"
@@ -108,6 +130,15 @@ class CustomComfyWorkflowHandler(EndpointHandler[CustomComfyWorkflowData]):
     async def generate_client_response(
         self, client_request: web.Request, model_response: ClientResponse
     ) -> Union[web.Response, web.StreamResponse]:
+        # Intercept and decode base64 images in workflow JSON before passing to backend
+        try:
+            data = await client_request.json()
+            if "input" in data and "workflow_json" in data["input"]:
+                wf = data["input"]["workflow_json"]
+                if "workflow" in wf:
+                    wf["workflow"] = decode_and_save_base64_images(wf["workflow"])
+        except Exception as e:
+            log.error(f"Error decoding base64 images: {e}")
         return await generate_client_response(client_request, model_response)
 
 

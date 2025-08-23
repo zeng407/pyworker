@@ -144,8 +144,8 @@ def call_custom_workflow_with_images(
     # You may want to update custom_fields based on workflow or user input
     custom_fields = dict(
         steps=prompt_json["3"]["inputs"].get("steps", 20),
-        width=prompt_json["5"]["inputs"].get("width", 512),
-        height=prompt_json["5"]["inputs"].get("height", 512),
+        width=1024,
+        height=1024,
     )
 
     req_data = dict(
