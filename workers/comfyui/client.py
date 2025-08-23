@@ -127,7 +127,7 @@ def call_custom_workflow_with_images(
     def upload_image(img_path):
         files = {"file": open(img_path, "rb")}
         data = {"name": Path(img_path).name}
-        upload_url = urljoin(server_url, "/upload/image")
+        upload_url = urljoin(url, "/upload/image")
         resp = requests.post(upload_url, files=files, data=data)
         resp.raise_for_status()
         return resp.json()["filename"]
