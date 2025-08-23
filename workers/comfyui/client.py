@@ -122,14 +122,22 @@ def call_custom_workflow_with_images(
         prompt_json = json.load(f)
 
 
-    # Read and encode images as base64
-    def encode_img_b64(img_path):
-        with open(img_path, "rb") as f:
-            return "data:image/{};base64,".format(Path(img_path).suffix[1:]) + base64.b64encode(f.read()).decode()
 
-    prompt_json["14"]["inputs"]["image"] = encode_img_b64(user_img)
+    # Upload images to server and get their filenames
+    def upload_image(img_path):
+        files = {"file": open(img_path, "rb")}
+        data = {"name": Path(img_path).name}
+        upload_url = urljoin(server_url, "/upload/image")
+        resp = requests.post(upload_url, files=files, data=data)
+        resp.raise_for_status()
+        return resp.json()["filename"]
+
+    user_img_filename = upload_image(user_img)
     style_img_path = styles[style]["img"]
-    prompt_json["31"]["inputs"]["image"] = style_img_path
+    style_img_filename = upload_image(style_img_path)
+
+    prompt_json["14"]["inputs"]["image"] = user_img_filename
+    prompt_json["31"]["inputs"]["image"] = style_img_filename
 
     # Build positive/negative prompt
     style_prompts = styles[style]["prompts"]

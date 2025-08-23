@@ -1,3 +1,27 @@
+from aiohttp import web
+# /upload/image endpoint for uploading images to be used as input
+async def handle_upload_image(request):
+    reader = await request.multipart()
+    field = await reader.next()
+    if field is None or field.name != "file":
+        return web.json_response({"error": "Missing file field"}, status=400)
+    filename = field.filename
+    # Get the custom name from the form (optional)
+    name_field = await reader.next()
+    if name_field and name_field.name == "name":
+        custom_name = (await name_field.text()).strip()
+        if custom_name:
+            filename = custom_name
+    # Save to uploads directory
+    os.makedirs("uploads", exist_ok=True)
+    save_path = os.path.join("uploads", filename)
+    with open(save_path, "wb") as f:
+        while True:
+            chunk = await field.read_chunk()
+            if not chunk:
+                break
+            f.write(chunk)
+    return web.json_response({"success": True, "filename": filename, "path": save_path})
 import os
 import logging
 import dataclasses
@@ -168,6 +192,7 @@ routes = [
     web.post("/prompt", backend.create_handler(DefaultComfyWorkflowHandler())),
     web.post("/custom-workflow", backend.create_handler(CustomComfyWorkflowHandler())),
     web.get("/ping", handle_ping),
+    web.post("/upload/image", handle_upload_image),
 ]
 
 if __name__ == "__main__":
