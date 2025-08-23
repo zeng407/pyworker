@@ -25,6 +25,7 @@ function echo_var(){
 [ -z "$BACKEND" ] && echo "BACKEND must be set!" && exit 1
 [ -z "$MODEL_LOG" ] && echo "MODEL_LOG must be set!" && exit 1
 [ -z "$HF_TOKEN" ] && echo "HF_TOKEN must be set!" && exit 1
+[ -z "$REPO_TOKEN" ] && echo "REPO_TOKEN must be set!" && exit 1
 [ "$BACKEND" = "comfyui" ] && [ -z "$COMFY_MODEL" ] && echo "For comfyui backends, COMFY_MODEL must be set!" && exit 1
 
 
@@ -49,7 +50,7 @@ then
     echo "setting up venv"
     curl -LsSf https://astral.sh/uv/install.sh | sh
     source ~/.local/bin/env
-    git clone https://github.com/vast-ai/pyworker "$SERVER_DIR"
+    git clone https://oauth2:$REPO_TOKEN@git.hsnl.tw/3d-floor-plan/vastai-pyworker.git "$SERVER_DIR"
 
     uv venv --managed-python "$WORKSPACE_DIR/worker-env" -p 3.10
     source "$WORKSPACE_DIR/worker-env/bin/activate"
