@@ -22,6 +22,7 @@ NODES=(
     "https://github.com/yolain/ComfyUI-Easy-Use"
     "https://github.com/chrisgoringe/cg-use-everywhere"
     "https://github.com/neverbiasu/ComfyUI-SAM2"
+    "https://github.com/cubiq/ComfyUI_essentials"
 )
 
 CHECKPOINT_MODELS=(

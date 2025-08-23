@@ -139,6 +139,7 @@ def call_custom_workflow_with_images(
     prompt_json["14"]["inputs"]["image"] = user_img_filename
     prompt_json["31"]["inputs"]["image"] = style_img_filename
 
+
     # Build positive/negative prompt
     style_prompts = styles[style]["prompts"]
     room_pos = room_prompt[room]["positive"]
@@ -148,6 +149,9 @@ def call_custom_workflow_with_images(
     prompt_json["6"]["inputs"]["text"] = positive_prompt
     prompt_json["7"]["inputs"]["text"] = negative_prompt
     prompt_json["49"]["inputs"]["filename_prefix"] = task_id
+
+    # Log the workflow JSON before sending
+    log.debug("prompt_json: %s", json.dumps(prompt_json, indent=2, ensure_ascii=False))
 
     # You may want to update custom_fields based on workflow or user input
     custom_fields = dict(
