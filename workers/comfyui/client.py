@@ -1,11 +1,27 @@
 import logging
 from urllib.parse import urljoin
-
+import os
+import base64
+import time
 import requests
-
 from lib.test_utils import print_truncate_res
 from utils.endpoint_util import Endpoint
 from utils.ssl import get_cert_file_path
+
+def save_images(res_json):
+    if isinstance(res_json, dict) and "images" in res_json:
+        os.makedirs("outputs", exist_ok=True)
+        for idx, img_data in enumerate(res_json["images"]):
+            if isinstance(img_data, str) and img_data.startswith("data:image/"):
+                header, b64data = img_data.split(",", 1)
+                ext = header.split("/")[1].split(";")[0]
+            else:
+                b64data = img_data
+                ext = "png"
+            out_path = os.path.join("outputs", f"output_{int(time.time())}_{idx}.{ext}")
+            with open(out_path, "wb") as f:
+                f.write(base64.b64decode(b64data))
+            print(f"Saved image to {out_path}")
 
 """
 NOTE: this client example uses a custom comfy workflow compatible with SD3 only
@@ -55,7 +71,9 @@ def call_default_workflow(
         verify=get_cert_file_path(),
     )
     response.raise_for_status()
-    print_truncate_res(str(response.json()))
+    res_json = response.json()
+    print_truncate_res(str(res_json))
+    save_images(res_json)
 
 
 def call_custom_workflow_for_sd3(
@@ -146,7 +164,9 @@ def call_custom_workflow_for_sd3(
         verify=get_cert_file_path(),
     )
     response.raise_for_status()
-    print_truncate_res(str(response.json()))
+    res_json = response.json()
+    print_truncate_res(str(res_json))
+    save_images(res_json)
 
 
 if __name__ == "__main__":
