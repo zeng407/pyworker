@@ -141,7 +141,6 @@ function provisioning_start() {
     DISK_GB_USED=$(($(df --output=used -m "${WORKSPACE}" | tail -n1) / 1000))
     DISK_GB_ALLOCATED=$(($DISK_GB_AVAILABLE + $DISK_GB_USED))
     provisioning_print_header
-    provisioning_update_comfyui
     provisioning_get_nodes
     provisioning_install_python_packages
     provisioning_get_models \
@@ -181,15 +180,6 @@ function provisioning_start() {
         "${WORKSPACE}/storage/stable_diffusion/models/ipadapter" \
         "${IPADAPTER_MODELS[@]}"
     provisioning_print_end
-}
-
-function provisioning_update_comfyui() {
-    printf "Updating ComfyUI...\n"
-    cd /workspace/ComfyUI
-    # Reset to main branch and pull latest
-    git checkout main 2>/dev/null || git checkout master 2>/dev/null
-    git pull origin main 2>/dev/null || git pull origin master 2>/dev/null
-    printf "ComfyUI updated to latest version\n"
 }
 
 function provisioning_get_nodes() {
