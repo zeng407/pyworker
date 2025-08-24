@@ -12,15 +12,16 @@ if [ -z "${HF_TOKEN}" ]; then
 fi
 
 PYTHON_PACKAGES=(
+    "diffusers"  # Required by some custom nodes
     #"opencv-python==4.7.0.72"
 )
 
 NODES=(
-    "https://github.com/ltdrdata/ComfyUI-Manager"
+    # "https://github.com/ltdrdata/ComfyUI-Manager"  # Temporarily disabled - compatibility issues
     "https://github.com/cubiq/ComfyUI_IPAdapter_plus"
     "https://github.com/Fannovel16/comfyui_controlnet_aux"
-    "https://github.com/yolain/ComfyUI-Easy-Use"
-    "https://github.com/chrisgoringe/cg-use-everywhere"
+    # "https://github.com/yolain/ComfyUI-Easy-Use"  # Temporarily disabled - compatibility issues
+    # "https://github.com/chrisgoringe/cg-use-everywhere"  # Temporarily disabled - compatibility issues
     "https://github.com/neverbiasu/ComfyUI-SAM2"
     "https://github.com/cubiq/ComfyUI_essentials"
 )
