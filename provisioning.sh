@@ -120,7 +120,7 @@ function provisioning_start() {
         "${WORKSPACE}/storage/stable_diffusion/models/ckpt/SDXL" \
         "${CHECKPOINT_MODELS_SDXL[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/lora" \
+        "${WORKSPACE}/ComfyUI/models/loras" \
         "${LORA_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/controlnet" \
