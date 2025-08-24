@@ -150,9 +150,6 @@ def call_custom_workflow_with_images(
     prompt_json["7"]["inputs"]["text"] = negative_prompt
     prompt_json["49"]["inputs"]["filename_prefix"] = task_id
 
-    # Log the workflow JSON before sending
-    log.debug("prompt_json: %s", json.dumps(prompt_json, indent=2, ensure_ascii=False))
-
     # You may want to update custom_fields based on workflow or user input
     custom_fields = dict(
         steps=prompt_json["3"]["inputs"].get("steps", 20),
@@ -166,6 +163,7 @@ def call_custom_workflow_with_images(
     )
     url = urljoin(url, WORKER_ENDPOINT)
     print(f"url: {url}")
+    print(f"auth_data: {auth_data}")
     response = requests.post(
         url,
         json=req_data,

@@ -79,7 +79,7 @@ CONTROLNET_MODELS=(
 
 CONTROLNET_MODELS_15=(
     "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_canny_fp16.safetensors"
-    "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_depth_fp16.safetensors"
+    "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11f1p_sd15_depth_fp16.safetensors"
    
 )
 CONTROLNET_MODELS_SDXL_CANNY=(
@@ -114,13 +114,13 @@ function provisioning_start() {
     provisioning_get_nodes
     provisioning_install_python_packages
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/checkpoints" \
+        "${WORKSPACE}/storage/stable_diffusion/models/ckpt" \
         "${CHECKPOINT_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/checkpoints/SDXL" \
+        "${WORKSPACE}/storage/stable_diffusion/models/ckpt/SDXL" \
         "${CHECKPOINT_MODELS_SDXL[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/loras" \
+        "${WORKSPACE}/storage/stable_diffusion/models/lora" \
         "${LORA_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/controlnet" \
@@ -144,7 +144,7 @@ function provisioning_start() {
         "${WORKSPACE}/storage/stable_diffusion/models/clip_vision" \
         "${CLIP_VERSION_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/sams" \
+        "${WORKSPACE}/ComfyUI/models/sams" \
         "${SAMS_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/ipadapter" \
