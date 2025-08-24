@@ -71,7 +71,8 @@ CHECKPOINT_MODELS_SDXL=(
 
 LORA_MODELS=(
     #"https://civitai.com/api/download/models/16576"
-    "https://civitai.com/api/download/models/30384"
+    "https://civitai.com/api/download/models/30384" #xsarchitectural-7.safetensors
+
 )
 
 VAE_MODELS_SDXL=(
@@ -150,7 +151,7 @@ function provisioning_start() {
         "${WORKSPACE}/storage/stable_diffusion/models/ckpt/SDXL" \
         "${CHECKPOINT_MODELS_SDXL[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/lora" \
+        "${WORKSPACE}/ComfyUI/models/loras" \
         "${LORA_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/controlnet" \
@@ -244,7 +245,25 @@ function provisioning_print_end() {
 
 # Download from $1 URL to $2 file path
 function provisioning_download() {
-    wget --header="Authorization: Bearer $HF_TOKEN" -qnc --content-disposition --show-progress -e dotbytes="${3:-4M}" -P "$2" "$1"
+    local url="$1"
+    local dir="$2"
+    
+    # For Civitai URLs, use simpler wget command to avoid filename issues
+    if [[ "$url" == *"civitai.com"* ]]; then
+        wget -O "${dir}/temp_download" "$url"
+        # Get the actual filename from the downloaded file or use a default
+        if [[ -f "${dir}/temp_download" ]]; then
+            # Try to get filename from Content-Disposition header or use basename
+            local filename=$(basename "$url")
+            if [[ "$filename" =~ ^[0-9]+$ ]]; then
+                # If filename is just numbers (like civitai model ID), use a better name
+                filename="${filename}.safetensors"
+            fi
+            mv "${dir}/temp_download" "${dir}/${filename}"
+        fi
+    else
+        wget --header="Authorization: Bearer $HF_TOKEN" -qnc --content-disposition --show-progress -e dotbytes="${3:-4M}" -P "$dir" "$url"
+    fi
 }
 
 provisioning_start
