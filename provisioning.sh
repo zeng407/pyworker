@@ -12,16 +12,45 @@ if [ -z "${HF_TOKEN}" ]; then
 fi
 
 PYTHON_PACKAGES=(
+    "comfyui-frontend-package==1.23.4"
+    "comfyui-workflow-templates==0.1.41"
+    "comfyui-embedded-docs==0.2.4"
+    "torch"
+    "torchsde"
+    "torchvision"
+    "torchaudio"
+    "numpy>=1.25.0"
+    "einops"
+    "transformers>=4.37.2"
+    "tokenizers>=0.13.3"
+    "sentencepiece"
+    "safetensors>=0.4.2"
+    "aiohttp>=3.11.8"
+    "yarl>=1.18.0"
+    "pyyaml"
+    "Pillow"
+    "scipy"
+    "tqdm"
+    "psutil"
+    "alembic"
+    "SQLAlchemy"
+    # Non essential dependencies
+    "kornia>=0.7.1"
+    "spandrel"
+    "soundfile"
+    "av>=14.2.0"
+    "pydantic~=2.0"
+    "pydantic-settings~=2.0"
     "diffusers"  # Required by some custom nodes
     #"opencv-python==4.7.0.72"
 )
 
 NODES=(
-    # "https://github.com/ltdrdata/ComfyUI-Manager"  # Temporarily disabled - compatibility issues
+    "https://github.com/ltdrdata/ComfyUI-Manager"  # Temporarily disabled - compatibility issues
     "https://github.com/cubiq/ComfyUI_IPAdapter_plus"
     "https://github.com/Fannovel16/comfyui_controlnet_aux"
-    # "https://github.com/yolain/ComfyUI-Easy-Use"  # Temporarily disabled - compatibility issues
-    # "https://github.com/chrisgoringe/cg-use-everywhere"  # Temporarily disabled - compatibility issues
+    "https://github.com/yolain/ComfyUI-Easy-Use"  # Temporarily disabled - compatibility issues
+    "https://github.com/chrisgoringe/cg-use-everywhere"  # Temporarily disabled - compatibility issues
     "https://github.com/neverbiasu/ComfyUI-SAM2"
     "https://github.com/cubiq/ComfyUI_essentials"
 )
