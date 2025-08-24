@@ -26,8 +26,6 @@ NODES=(
 )
 
 CHECKPOINT_MODELS=(
-    "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors"
-    "https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors"
     "https://huggingface.co/a34384300/XSarchitectural-InteriorDesign-ForXSLora/resolve/main/xsarchitectural_v11.ckpt"
     # "https://huggingface.co/stabilityai/stable-diffusion-3-medium/resolve/main/sd3_medium_incl_clips_t5xxlfp16.safetensors"
     # "https://huggingface.co/h94/IP-Adapter/resolve/main/models/image_encoder/model.safetensors"
@@ -35,7 +33,10 @@ CHECKPOINT_MODELS=(
     # "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_canny_fp16.safetensors"
     # "https://huggingface.co/h94/IP-Adapter/resolve/main/models/ip-adapter_sd15.safetensors"
     # "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
-
+)
+CHECKPOINT_MODELS_SDXL=(
+    "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors"
+    "https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors"
 )
 
 LORA_MODELS=(
@@ -43,7 +44,7 @@ LORA_MODELS=(
     "https://civitai.com/api/download/models/30384"
 )
 
-VAE_MODELS=(
+VAE_MODELS_SDXL=(
     # "https://huggingface.co/stabilityai/sd-vae-ft-ema-original/resolve/main/vae-ft-ema-560000-ema-pruned.safetensors"
     # "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors"
     "https://huggingface.co/stabilityai/sdxl-vae/resolve/main/sdxl_vae.safetensors"
@@ -73,9 +74,18 @@ CONTROLNET_MODELS=(
     #"https://huggingface.co/webui/ControlNet-modules-safetensors/resolve/main/t2iadapter_seg-fp16.safetensors"
     #"https://huggingface.co/webui/ControlNet-modules-safetensors/resolve/main/t2iadapter_sketch-fp16.safetensors"
     #"https://huggingface.co/webui/ControlNet-modules-safetensors/resolve/main/t2iadapter_style-fp16.safetensors"
+   
+)
+
+CONTROLNET_MODELS_15=(
     "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_canny_fp16.safetensors"
     "https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_depth_fp16.safetensors"
+   
+)
+CONTROLNET_MODELS_SDXL_CANNY=(
     "https://huggingface.co/xinsir/controlnet-canny-sdxl-1.0/resolve/main/diffusion_pytorch_model_V2.safetensors"
+)
+CONTROLNET_MODELS_SDXL_DEPTH=(
     "https://huggingface.co/xinsir/controlnet-depth-sdxl-1.0/resolve/main/diffusion_pytorch_model.safetensors"
 )
 
@@ -104,17 +114,29 @@ function provisioning_start() {
     provisioning_get_nodes
     provisioning_install_python_packages
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/ckpt" \
+        "${WORKSPACE}/storage/stable_diffusion/models/checkpoints" \
         "${CHECKPOINT_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/lora" \
+        "${WORKSPACE}/storage/stable_diffusion/models/checkpoints/SDXL" \
+        "${CHECKPOINT_MODELS_SDXL[@]}"
+    provisioning_get_models \
+        "${WORKSPACE}/storage/stable_diffusion/models/loras" \
         "${LORA_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/controlnet" \
         "${CONTROLNET_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/vae" \
-        "${VAE_MODELS[@]}"
+        "${WORKSPACE}/storage/stable_diffusion/models/controlnet/1.5" \
+        "${CONTROLNET_MODELS_15[@]}"
+    provisioning_get_models \
+        "${WORKSPACE}/storage/stable_diffusion/models/controlnet/SDXL/controlnet-canny-sdxl-1.0" \
+        "${CONTROLNET_MODELS_SDXL_CANNY[@]}"
+    provisioning_get_models \
+        "${WORKSPACE}/storage/stable_diffusion/models/controlnet/SDXL/controlnet-depth-sdxl-1.0" \
+        "${CONTROLNET_MODELS_SDXL_DEPTH[@]}"
+    provisioning_get_models \
+        "${WORKSPACE}/storage/stable_diffusion/models/vae/SDXL" \
+        "${VAE_MODELS_SDXL[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/esrgan" \
         "${ESRGAN_MODELS[@]}"
