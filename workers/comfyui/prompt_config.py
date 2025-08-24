@@ -2,7 +2,7 @@
 
 styles = {
     "style_eu1": {
-        "img": "workers/comfyui/misc/style1.jpg",
+        "img": "workers/comfyui/misc/style_eu1.jpg",
         "prompts": [
             ("Scandinavian-inspired minimalist interior with clean lines, light wood accents, geometric forms, and practical furnishings", 1.1),
             ("Soft neutral palette with pops of bright, cheerful color to create warmth and contrast in a cold climate", 1.0),
