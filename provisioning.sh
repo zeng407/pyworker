@@ -164,7 +164,7 @@ function retry_micromamba_install() {
             pkill -9 -f mamba 2>/dev/null || true
             
             # Clean all mamba caches and locks
-            micromamba clean --all --force-pkgs-dirs 2>/dev/null || true
+            echo "y" | micromamba clean --all --force-pkgs-dirs 2>/dev/null || true
             
             # Remove entire cache directory and recreate
             rm -rf /root/.cache/mamba 2>/dev/null || true
