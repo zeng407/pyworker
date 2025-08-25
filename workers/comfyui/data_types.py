@@ -185,8 +185,27 @@ class CustomComfyWorkflowData(ApiPayload):
 
     def generate_payload_json(self) -> Dict[str, Any]:
         template_json = json.loads(get_request_template())
-        template_json["input"]["workflow_json"] = self.workflow
+        # Convert relative image paths to absolute paths in workflow
+        workflow_with_abs_paths = self._convert_image_paths_to_absolute(self.workflow)
+        template_json["input"]["workflow_json"] = workflow_with_abs_paths
         return template_json
+
+    def _convert_image_paths_to_absolute(self, workflow: dict) -> dict:
+        """Convert relative image paths in workflow to absolute paths"""
+        import copy
+        workflow_copy = copy.deepcopy(workflow)
+        
+        for node_id, node_data in workflow_copy.items():
+            if isinstance(node_data, dict) and "inputs" in node_data:
+                inputs = node_data["inputs"]
+                if isinstance(inputs, dict) and "image" in inputs:
+                    image_path = inputs["image"]
+                    if isinstance(image_path, str) and not os.path.isabs(image_path):
+                        # Convert relative path to absolute path
+                        abs_path = os.path.abspath(image_path)
+                        inputs["image"] = abs_path
+        
+        return workflow_copy
 
     @classmethod
     def from_json_msg(cls, json_msg: Dict[str, Any]) -> "CustomComfyWorkflowData":

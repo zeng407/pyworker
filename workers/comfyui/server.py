@@ -30,8 +30,9 @@ async def handle_upload_image(request):
         if custom_name:
             filename = custom_name
     # Save to uploads directory
-    os.makedirs("uploads", exist_ok=True)
-    save_path = os.path.join("uploads", filename)
+    uploads_dir = os.path.abspath("uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    save_path = os.path.join(uploads_dir, filename)
     with open(save_path, "wb") as f:
         while True:
             chunk = await field.read_chunk()
@@ -39,27 +40,6 @@ async def handle_upload_image(request):
                 break
             f.write(chunk)
     return web.json_response({"success": True, "filename": filename, "path": save_path})
-
-def decode_and_save_base64_images(workflow_json):
-    """
-    Find all LoadImage nodes with base64 image strings, decode and save to disk, replace with filename.
-    """
-    img_pattern = re.compile(r"^data:image/(png|jpeg|jpg);base64,(.*)$", re.IGNORECASE)
-    for node_id, node in workflow_json.items():
-        if node.get("class_type") == "LoadImage":
-            img_val = node.get("inputs", {}).get("image")
-            if isinstance(img_val, str):
-                m = img_pattern.match(img_val)
-                if m:
-                    ext = m.group(1)
-                    b64data = m.group(2)
-                    filename = f"uploaded_{node_id}_{int(time.time())}.{ext}"
-                    filepath = os.path.join("uploads", filename)
-                    os.makedirs("uploads", exist_ok=True)
-                    with open(filepath, "wb") as f:
-                        f.write(base64.b64decode(b64data))
-                    node["inputs"]["image"] = filename
-    return workflow_json
 
 
 MODEL_SERVER_URL = "http://0.0.0.0:38188"
@@ -154,18 +134,27 @@ class CustomComfyWorkflowHandler(EndpointHandler[CustomComfyWorkflowData]):
     def make_benchmark_payload(self) -> CustomComfyWorkflowData:
         return CustomComfyWorkflowData.for_test()
 
+    def _convert_image_paths_to_absolute(self, workflow: dict) -> dict:
+        """Convert relative image paths in workflow to absolute paths"""
+        import copy
+        workflow_copy = copy.deepcopy(workflow)
+        
+        for node_id, node_data in workflow_copy.items():
+            if isinstance(node_data, dict) and "inputs" in node_data:
+                inputs = node_data["inputs"]
+                if isinstance(inputs, dict) and "image" in inputs:
+                    image_path = inputs["image"]
+                    if isinstance(image_path, str) and not os.path.isabs(image_path):
+                        # Convert relative path to absolute path
+                        abs_path = os.path.abspath(image_path)
+                        inputs["image"] = abs_path
+                        log.debug(f"Converted image path: {image_path} -> {abs_path}")
+        
+        return workflow_copy
+
     async def generate_client_response(
         self, client_request: web.Request, model_response: ClientResponse
     ) -> Union[web.Response, web.StreamResponse]:
-        # Intercept and decode base64 images in workflow JSON before passing to backend
-        try:
-            data = await client_request.json()
-            if "input" in data and "workflow_json" in data["input"]:
-                wf = data["input"]["workflow_json"]
-                if "workflow" in wf:
-                    wf["workflow"] = decode_and_save_base64_images(wf["workflow"])
-        except Exception as e:
-            log.error(f"Error decoding base64 images: {e}")
         return await generate_client_response(client_request, model_response)
 
 
