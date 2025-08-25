@@ -19,7 +19,7 @@ PYTHON_PACKAGES=(
     "torchsde"
     "torchvision"
     "torchaudio"
-    "numpy>=1.25.0,<2.0"  # Restrict to NumPy 1.x for compatibility
+    "numpy=2.2.6"  # Restrict to NumPy 1.x for compatibility
     "einops"
     "transformers>=4.37.2"
     "tokenizers>=0.13.3"
@@ -42,7 +42,7 @@ PYTHON_PACKAGES=(
     "pydantic~=2.0"
     "pydantic-settings~=2.0"
     "diffusers"  # Required by some custom nodes
-    "opencv-python>=4.8.0,<4.10.0"  # Compatible with NumPy 1.x
+    "opencv-python==4.12.0.88"
 )
 
 NODES=(
@@ -137,6 +137,28 @@ IPADAPTER_MODELS=(
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
 
+# Generic function to retry micromamba installation until success
+function retry_micromamba_install() {
+    local description="$1"
+    shift
+    local command=("$@")
+    
+    attempt=1
+    while true; do
+        printf "%s (attempt %d)...\n" "$description" "$attempt"
+        if "${command[@]}"; then
+            printf "%s installed successfully!\n" "$description"
+            break
+        else
+            printf "Installation failed, cleaning cache and retrying...\n"
+            micromamba clean --locks 2>/dev/null || true
+            rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+            sleep 2
+            ((attempt++))
+        fi
+    done
+}
+
 function provisioning_start() {
     DISK_GB_AVAILABLE=$(($(df --output=avail -m "${WORKSPACE}" | tail -n1) / 1000))
     DISK_GB_USED=$(($(df --output=used -m "${WORKSPACE}" | tail -n1) / 1000))
@@ -193,28 +215,14 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    # Clean mamba locks and retry installation
-                    micromamba clean --locks 2>/dev/null || true
-                    micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements" || {
-                        printf "Retrying installation after cleaning mamba locks...\n"
-                        sleep 2
-                        micromamba clean --locks 2>/dev/null || true
-                        micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements"
-                    }
+                    retry_micromamba_install "Installing requirements" micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements"
                 fi
             fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                # Clean mamba locks and retry installation
-                micromamba clean --locks 2>/dev/null || true
-                micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}" || {
-                    printf "Retrying installation after cleaning mamba locks...\n"
-                    sleep 2
-                    micromamba clean --locks 2>/dev/null || true
-                    micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}"
-                }
+                retry_micromamba_install "Installing requirements" micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}"
             fi
         fi
     done
@@ -222,14 +230,7 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        # Clean mamba locks and retry installation
-        micromamba clean --locks 2>/dev/null || true
-        micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]} || {
-            printf "Retrying python packages installation after cleaning mamba locks...\n"
-            sleep 2
-            micromamba clean --locks 2>/dev/null || true
-            micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]}
-        }
+        retry_micromamba_install "Installing Python packages" micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]}
     fi
 }
 
