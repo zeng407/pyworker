@@ -9,6 +9,7 @@ import requests
 from lib.test_utils import print_truncate_res
 from utils.endpoint_util import Endpoint
 from utils.ssl import get_cert_file_path
+from .data_types import count_workload
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -58,7 +59,9 @@ def call_text2image_workflow(
             return None
     
     WORKER_ENDPOINT = "/generate/sync"
-    COST = 100
+
+    # This worker has concurrency = 1.  All workloads have cost value 1.0
+    COST = count_workload()
     
     # Route to get worker URL
     route_payload = {
@@ -101,8 +104,7 @@ def call_text2image_workflow(
                 "seed": random.randint(0, 2**32 - 1)
             },
             "workflow_json": {}  # Empty since using modifier approach
-        },
-        "expected_time": 30.0  # Expected 30 seconds on RTX4090
+        }
     }
     
     req_data = dict(payload=worker_payload, auth_data=auth_data)
