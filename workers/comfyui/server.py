@@ -18,34 +18,40 @@ import re
 # /upload/image endpoint for uploading images to be used as input
 async def handle_upload_image(request):
     reader = await request.multipart()
-    field = await reader.next()
-    if field is None or field.name != "file":
-        log.debug("Missing file field")
-        return web.json_response({"error": "Missing file field"}, status=400)
     
-    filename = field.filename
+    filename = None
+    file_data = None
+    
+    # Process all fields in the multipart request
+    async for field in reader:
+        if field.name == "file":
+            filename = field.filename
+            if not filename:
+                log.debug("No filename provided")
+                return web.json_response({"error": "No filename provided"}, status=400)
+            # Read all data from the file field
+            file_data = await field.read()
+        elif field.name == "name":
+            # Optional custom name
+            custom_name = (await field.text()).strip()
+            if custom_name:
+                filename = custom_name
+    
+    # Check if we received file data
+    if not file_data:
+        log.debug("No file data received")
+        return web.json_response({"error": "No file data received"}, status=400)
+    
     if not filename:
         log.debug("No filename provided")
         return web.json_response({"error": "No filename provided"}, status=400)
-    
-    # Get the custom name from the form (optional)
-    name_field = await reader.next()
-    if name_field and name_field.name == "name":
-        custom_name = (await name_field.text()).strip()
-        if custom_name:
-            filename = custom_name
     
     # Save to uploads directory
     uploads_dir = os.path.abspath("uploads")
     os.makedirs(uploads_dir, exist_ok=True)
     save_path = os.path.join(uploads_dir, filename)
     
-    # Read all data from the field and write to file
-    file_data = await field.read()
-    if not file_data:
-        log.debug("No file data received")
-        return web.json_response({"error": "No file data received"}, status=400)
-    
+    # Write file data
     with open(save_path, "wb") as f:
         f.write(file_data)
     
