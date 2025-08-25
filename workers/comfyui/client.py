@@ -128,10 +128,7 @@ def call_custom_workflow_with_images(
             files = {"file": (Path(img_path).name, f)}
             resp = requests.post(upload_url, files=files, verify=get_cert_file_path())
             resp.raise_for_status()
-            response_data = resp.json()
-            path = response_data.get("path", "")
-            filename = response_data["filename"]
-            return f"{path}/{filename}" if path else filename
+            return resp.json()["path"]
 
     user_img_filename = upload_image(user_img)
     style_img_path = styles[style]["img"]
