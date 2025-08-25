@@ -51,6 +51,15 @@ then
     curl -LsSf https://astral.sh/uv/install.sh | sh
     source ~/.local/bin/env
     git clone "$REPO_URL" "$SERVER_DIR"
+    
+    # Move all images from misc directory to ComfyUI input directory
+    mkdir -p "$WORKSPACE_DIR/ComfyUI/input/style/"
+    cp "$SERVER_DIR/workers/comfyui/misc"/*.{jpg,jpeg,png,gif,bmp,webp} "$WORKSPACE_DIR/ComfyUI/input/style/" 2>/dev/null || true
+    
+    # Create symbolic link for uploads directory
+    mkdir -p "$SERVER_DIR/uploads"
+    mkdir -p "$WORKSPACE_DIR/ComfyUI/input/"
+    ln -sfn "$SERVER_DIR/uploads" "$WORKSPACE_DIR/ComfyUI/input/uploads"
 
     uv venv --managed-python "$WORKSPACE_DIR/worker-env" -p 3.10
     source "$WORKSPACE_DIR/worker-env/bin/activate"
