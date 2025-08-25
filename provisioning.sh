@@ -42,7 +42,7 @@ PYTHON_PACKAGES=(
     "pydantic~=2.0"
     "pydantic-settings~=2.0"
     "diffusers"
-    "opencv-python==4.12.0.88"
+    "opencv-python<4.10.0"
 )
 
 NODES=(
