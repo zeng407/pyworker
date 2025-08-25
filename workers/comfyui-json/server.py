@@ -12,7 +12,7 @@ from lib.server import start_server
 from .data_types import ComfyWorkflowData
 
 
-MODEL_SERVER_URL = "http://127.0.0.1:18288"
+MODEL_SERVER_URL = os.getenv("MODEL_SERVER_URL", "http://127.0.0.1:18288")
 
 # This is the last log line that gets emitted once comfyui+extensions have been fully loaded
 MODEL_SERVER_START_LOG_MSG = "To see the GUI go to: http://127.0.0.1:18188"
