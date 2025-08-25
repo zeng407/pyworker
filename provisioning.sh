@@ -19,7 +19,7 @@ PYTHON_PACKAGES=(
     "torchsde"
     "torchvision"
     "torchaudio"
-    "numpy=2.2.6"  # Restrict to NumPy 1.x for compatibility
+    "numpy>=1.25.0,<2.0"  # Restrict to NumPy 1.x for compatibility
     "einops"
     "transformers>=4.37.2"
     "tokenizers>=0.13.3"
@@ -248,19 +248,30 @@ function provisioning_download() {
     local url="$1"
     local dir="$2"
     
-    # For Civitai URLs, use simpler wget command to avoid filename issues
+    # For Civitai URLs, handle redirect and get filename from final URL
     if [[ "$url" == *"civitai.com"* ]]; then
-        wget -O "${dir}/temp_download" "$url"
-        # Get the actual filename from the downloaded file or use a default
-        if [[ -f "${dir}/temp_download" ]]; then
-            # Try to get filename from Content-Disposition header or use basename
-            local filename=$(basename "$url")
-            if [[ "$filename" =~ ^[0-9]+$ ]]; then
-                # If filename is just numbers (like civitai model ID), use a better name
-                filename="${filename}.safetensors"
-            fi
-            mv "${dir}/temp_download" "${dir}/${filename}"
+        printf "Getting filename from Civitai redirect...\n"
+        
+        # Follow redirect and get the final URL
+        local final_url=$(curl -sL -o /dev/null -w '%{url_effective}' "$url")
+        
+        # Extract filename from response-content-disposition parameter in the final URL
+        local filename=$(echo "$final_url" | sed -n 's/.*filename%3D%22\([^%]*\)%22.*/\1/p')
+        
+        # If we couldn't extract filename, try alternative method
+        if [[ -z "$filename" ]]; then
+            # Try to get it from the redirect location header
+            local redirect_url=$(curl -sI "$url" | grep -i "location:" | cut -d' ' -f2 | tr -d '\r')
+            filename=$(echo "$redirect_url" | sed -n 's/.*filename%3D%22\([^%]*\)%22.*/\1/p')
         fi
+        
+        # If still no filename, use default
+        if [[ -z "$filename" ]]; then
+            filename="$(basename "$url").safetensors"
+        fi
+        
+        printf "Downloading as: %s\n" "$filename"
+        wget -O "${dir}/${filename}" "$url"
     else
         wget --header="Authorization: Bearer $HF_TOKEN" -qnc --content-disposition --show-progress -e dotbytes="${3:-4M}" -P "$dir" "$url"
     fi
