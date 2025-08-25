@@ -19,7 +19,7 @@ PYTHON_PACKAGES=(
     "torchsde"
     "torchvision"
     "torchaudio"
-    "numpy==2.2.6"  # Restrict to NumPy 1.x for compatibility
+    "numpy<2"
     "einops"
     "transformers>=4.37.2"
     "tokenizers>=0.13.3"
@@ -41,7 +41,7 @@ PYTHON_PACKAGES=(
     "av>=14.2.0"
     "pydantic~=2.0"
     "pydantic-settings~=2.0"
-    "diffusers"  # Required by some custom nodes
+    "diffusers"
     "opencv-python==4.12.0.88"
 )
 
