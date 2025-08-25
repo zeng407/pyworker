@@ -19,7 +19,7 @@ PYTHON_PACKAGES=(
     "torchsde"
     "torchvision"
     "torchaudio"
-    "numpy=2.2.6"  # Restrict to NumPy 1.x for compatibility
+    "numpy==2.2.6"  # Restrict to NumPy 1.x for compatibility
     "einops"
     "transformers>=4.37.2"
     "tokenizers>=0.13.3"
