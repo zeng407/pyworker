@@ -2,6 +2,28 @@
 
 This is the base PyWorker for ComfyUI. It provides a unified interface for running any ComfyUI workflow through a proxy-based architecture.
 
+The cost for each request has a static value of `1`.  ComfyUI does not handle concurrent workloads and there is no current provision to load multiple instances of ComfyUI per worker node.
+
+## Requirements
+
+This worker requires both [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [ComfyUI API Wrapper](https://github.com/ai-dock/comfyui-api-wrapper).
+
+A docker image is provided but you may use any if the above requirements are met.
+
+## Benchmarking
+
+A simple image generation benchmark is run when the worker is first loaded.
+
+This benchmark uses SD v1.5 in the default text to image workflow provided by ComfyUI.  The following variables can be used to alter the complexity and running time of the benchmark:
+
+| Environment Variable | Default Value | 
+| -------------------- | ------------- |
+| BENCHMARK_TEST_WIDTH | 512 |
+| BENCHMARK_TEST_HEIGHT | 512 |
+| BENCHMARK_TEST_STEPS | 20 |
+
+The prompt will be randomly selected from the file in misc/test_prompts.txt and a random seed used for every run of the benchmark.
+
 ## Endpoint
 
 The worker provides a single endpoint:
@@ -27,8 +49,7 @@ The worker accepts requests in the following format. Choose either modifier mode
     },
     "s3": { ... },       // optional
     "webhook": { ... }   // optional
-  },
-  "expected_time": 30.0
+  }
 }
 ```
 
@@ -42,8 +63,7 @@ The worker accepts requests in the following format. Choose either modifier mode
     },
     "s3": { ... },       // optional
     "webhook": { ... }   // optional
-  },
-  "expected_time": 30.0
+  }
 }
 ```
 
@@ -53,7 +73,6 @@ The worker accepts requests in the following format. Choose either modifier mode
 
 - **`input`**: Contains the main workflow data
 - **`input.request_id`**: Unique identifier for the request
-- **`expected_time`**: Expected runtime in seconds on RTX4090 (defaults to 46.0 if not provided)
 
 ### Workflow Mode (Choose One)
 
@@ -128,8 +147,7 @@ WEBHOOK_TIMEOUT=30                   # Webhook timeout in seconds
       "steps": 20,
       "seed": 42
     }
-  },
-  "expected_time": 25.0
+  }
 }
 ```
 
@@ -156,19 +174,9 @@ WEBHOOK_TIMEOUT=30                   # Webhook timeout in seconds
         "class_type": "KSampler"
       }
     }
-  },
-  "expected_time": 45.0
+  }
 }
 ```
-
-## Expected Time Guidelines
-
-The `expected_time` field helps with resource planning and should reflect expected runtime on RTX4090:
-
-- **Simple text-to-image**: 15-30 seconds
-- **Complex workflows with upscaling**: 60+ seconds  
-- **Video generation**: 180+ seconds
-- **Default**: 46 seconds (if not specified)
 
 ## Client Libraries
 
