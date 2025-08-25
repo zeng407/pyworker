@@ -22,23 +22,39 @@ async def handle_upload_image(request):
     if field is None or field.name != "file":
         log.debug("Missing file field")
         return web.json_response({"error": "Missing file field"}, status=400)
+    
     filename = field.filename
+    if not filename:
+        log.debug("No filename provided")
+        return web.json_response({"error": "No filename provided"}, status=400)
+    
     # Get the custom name from the form (optional)
     name_field = await reader.next()
     if name_field and name_field.name == "name":
         custom_name = (await name_field.text()).strip()
         if custom_name:
             filename = custom_name
+    
     # Save to uploads directory
     uploads_dir = os.path.abspath("uploads")
     os.makedirs(uploads_dir, exist_ok=True)
     save_path = os.path.join(uploads_dir, filename)
+    
+    # Read all data from the field and write to file
+    file_data = await field.read()
+    if not file_data:
+        log.debug("No file data received")
+        return web.json_response({"error": "No file data received"}, status=400)
+    
     with open(save_path, "wb") as f:
-        while True:
-            chunk = await field.read_chunk()
-            if not chunk:
-                break
-            f.write(chunk)
+        f.write(file_data)
+    
+    # Verify file was written correctly
+    if not os.path.exists(save_path) or os.path.getsize(save_path) == 0:
+        log.debug(f"Failed to save file: {save_path}")
+        return web.json_response({"error": "Failed to save file"}, status=500)
+    
+    log.debug(f"Successfully uploaded file: {save_path} (size: {os.path.getsize(save_path)} bytes)")
     return web.json_response({"success": True, "filename": filename, "path": save_path})
 
 
