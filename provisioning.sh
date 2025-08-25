@@ -193,14 +193,28 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements"
+                    # Clean mamba lock and retry installation
+                    rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+                    micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements" || {
+                        printf "Retrying installation after cleaning mamba lock...\n"
+                        sleep 2
+                        rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+                        micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements"
+                    }
                 fi
             fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}"
+                # Clean mamba lock and retry installation
+                rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+                micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}" || {
+                    printf "Retrying installation after cleaning mamba lock...\n"
+                    sleep 2
+                    rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+                    micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}"
+                }
             fi
         fi
     done
@@ -208,7 +222,14 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]}
+        # Clean mamba lock and retry installation
+        rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+        micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]} || {
+            printf "Retrying python packages installation after cleaning mamba lock...\n"
+            sleep 2
+            rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+            micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]}
+        }
     fi
 }
 
