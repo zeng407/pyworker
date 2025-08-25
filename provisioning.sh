@@ -137,55 +137,6 @@ IPADAPTER_MODELS=(
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
 
-# Generic function to retry micromamba installation until success
-function retry_micromamba_install() {
-    local description="$1"
-    shift
-    local command=("$@")
-    
-    attempt=1
-    while true; do
-        printf "%s (attempt %d)...\n" "$description" "$attempt"
-        if "${command[@]}"; then
-            printf "%s installed successfully!\n" "$description"
-            break
-        else
-            printf "Installation failed, performing aggressive cleanup and retrying...\n"
-            
-            # Kill any running micromamba/mamba processes
-            pkill -f micromamba 2>/dev/null || true
-            pkill -f mamba 2>/dev/null || true
-            
-            # Wait for processes to terminate
-            sleep 1
-            
-            # Force kill if still running
-            pkill -9 -f micromamba 2>/dev/null || true
-            pkill -9 -f mamba 2>/dev/null || true
-            
-            # Clean all mamba caches and locks
-            echo "y" | micromamba clean --all --force-pkgs-dirs 2>/dev/null || true
-            
-            # Remove entire cache directory and recreate
-            rm -rf /root/.cache/mamba 2>/dev/null || true
-            mkdir -p /root/.cache/mamba 2>/dev/null || true
-            
-            # Remove any stale lock files in other locations
-            find /tmp -name "*mamba*lock*" -delete 2>/dev/null || true
-            find /var/tmp -name "*mamba*lock*" -delete 2>/dev/null || true
-            
-            # Wait longer before retry if we've tried many times
-            if [ $attempt -gt 10 ]; then
-                sleep 5
-            else
-                sleep 2
-            fi
-            
-            ((attempt++))
-        fi
-    done
-}
-
 function provisioning_start() {
     DISK_GB_AVAILABLE=$(($(df --output=avail -m "${WORKSPACE}" | tail -n1) / 1000))
     DISK_GB_USED=$(($(df --output=used -m "${WORKSPACE}" | tail -n1) / 1000))
@@ -242,14 +193,14 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    retry_micromamba_install "Installing requirements" micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements"
+                    micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements"
                 fi
             fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                retry_micromamba_install "Installing requirements" micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}"
+                micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}"
             fi
         fi
     done
@@ -257,7 +208,7 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        retry_micromamba_install "Installing Python packages" micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]}
+        micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]}
     fi
 }
 
