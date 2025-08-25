@@ -193,12 +193,12 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    # Clean mamba lock and retry installation
-                    rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+                    # Clean mamba locks and retry installation
+                    micromamba clean --locks 2>/dev/null || true
                     micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements" || {
-                        printf "Retrying installation after cleaning mamba lock...\n"
+                        printf "Retrying installation after cleaning mamba locks...\n"
                         sleep 2
-                        rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+                        micromamba clean --locks 2>/dev/null || true
                         micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements"
                     }
                 fi
@@ -207,12 +207,12 @@ function provisioning_get_nodes() {
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                # Clean mamba lock and retry installation
-                rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+                # Clean mamba locks and retry installation
+                micromamba clean --locks 2>/dev/null || true
                 micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}" || {
-                    printf "Retrying installation after cleaning mamba lock...\n"
+                    printf "Retrying installation after cleaning mamba locks...\n"
                     sleep 2
-                    rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+                    micromamba clean --locks 2>/dev/null || true
                     micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}"
                 }
             fi
@@ -222,12 +222,12 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        # Clean mamba lock and retry installation
-        rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+        # Clean mamba locks and retry installation
+        micromamba clean --locks 2>/dev/null || true
         micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]} || {
-            printf "Retrying python packages installation after cleaning mamba lock...\n"
+            printf "Retrying python packages installation after cleaning mamba locks...\n"
             sleep 2
-            rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
+            micromamba clean --locks 2>/dev/null || true
             micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]}
         }
     fi
