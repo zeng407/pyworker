@@ -150,10 +150,37 @@ function retry_micromamba_install() {
             printf "%s installed successfully!\n" "$description"
             break
         else
-            printf "Installation failed, cleaning cache and retrying...\n"
-            micromamba clean --locks 2>/dev/null || true
-            rm -f /root/.cache/mamba/proc/proc.lock 2>/dev/null || true
-            sleep 2
+            printf "Installation failed, performing aggressive cleanup and retrying...\n"
+            
+            # Kill any running micromamba/mamba processes
+            pkill -f micromamba 2>/dev/null || true
+            pkill -f mamba 2>/dev/null || true
+            
+            # Wait for processes to terminate
+            sleep 1
+            
+            # Force kill if still running
+            pkill -9 -f micromamba 2>/dev/null || true
+            pkill -9 -f mamba 2>/dev/null || true
+            
+            # Clean all mamba caches and locks
+            micromamba clean --all --force-pkgs-dirs 2>/dev/null || true
+            
+            # Remove entire cache directory and recreate
+            rm -rf /root/.cache/mamba 2>/dev/null || true
+            mkdir -p /root/.cache/mamba 2>/dev/null || true
+            
+            # Remove any stale lock files in other locations
+            find /tmp -name "*mamba*lock*" -delete 2>/dev/null || true
+            find /var/tmp -name "*mamba*lock*" -delete 2>/dev/null || true
+            
+            # Wait longer before retry if we've tried many times
+            if [ $attempt -gt 10 ]; then
+                sleep 5
+            else
+                sleep 2
+            fi
+            
             ((attempt++))
         fi
     done
