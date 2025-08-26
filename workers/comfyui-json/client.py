@@ -33,6 +33,7 @@ def call_text2image_workflow(
                 timeout=timeout,
                 verify=verify
             )
+            
             response.raise_for_status()
             return response.json()
             
@@ -79,6 +80,14 @@ def call_text2image_workflow(
     )
     
     if route_response is None:
+        return None
+    
+    if "url" not in route_response or not route_response["url"]:
+        log.error("Error: No worker in 'Ready' state. Please wait while the serverless engine removes errored workers or finishes loading new workers.")
+        return None
+    
+    if "status" in route_response:
+        print(f"Autoscaler status: {route_response['status']}")
         return None
     
     # Extract data from route response
