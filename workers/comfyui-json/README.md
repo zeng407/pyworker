@@ -12,17 +12,40 @@ A docker image is provided but you may use any if the above requirements are met
 
 ## Benchmarking
 
-A simple image generation benchmark is run when the worker is first loaded.
+A simple image generation benchmark runs when each worker initializes to validate GPU performance and identify underperforming machines.
 
-This benchmark uses SD v1.5 in the default text to image workflow provided by ComfyUI.  The following variables can be used to alter the complexity and running time of the benchmark:
+The benchmark uses Stable Diffusion v1.5 with ComfyUI's default text-to-image workflow. Configure the benchmark complexity and duration using these variables:
 
-| Environment Variable | Default Value | 
-| -------------------- | ------------- |
-| BENCHMARK_TEST_WIDTH | 512 |
-| BENCHMARK_TEST_HEIGHT | 512 |
-| BENCHMARK_TEST_STEPS | 20 |
+| Environment Variable | Default Value | Description |
+| -------------------- | ------------- | ----------- |
+| BENCHMARK_TEST_WIDTH | 512 | Image width (pixels) |
+| BENCHMARK_TEST_HEIGHT | 512 | Image height (pixels) |
+| BENCHMARK_TEST_STEPS | 20 | Number of denoising steps |
 
-The prompt will be randomly selected from the file in misc/test_prompts.txt and a random seed used for every run of the benchmark.
+Each benchmark run uses a random prompt from `misc/test_prompts.txt` and a random seed to ensure consistent GPU load patterns.
+
+### Calibrating Benchmark Duration
+
+To screen for underperforming hardware, set `BENCHMARK_TEST_STEPS` to match your expected production workflow duration. This allows you to identify machines that won't meet performance requirements.
+
+**Example:** If your typical workflow should complete in 90 seconds on acceptable hardware:
+
+```bash
+# 1. Measure it/sec on your reference machine
+# RTX 4090 typically achieves ~43 it/sec with SD1.5
+
+# 2. Calculate required steps
+# 90 seconds × 43 it/sec = 3870 steps
+
+# 3. Configure benchmark
+export BENCHMARK_TEST_STEPS=3870
+
+# 4. Machines completing significantly slower than 90s indicate hardware issues
+```
+
+**Performance expectations:**
+- Benchmark duration should remain consistent across identical GPU models
+- Significant variation (>20%) may indicate thermal, power, or configuration issues
 
 ## Endpoint
 
