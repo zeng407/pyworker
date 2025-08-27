@@ -11,7 +11,7 @@ from functools import cached_property
 from distutils.util import strtobool
 
 from anyio import open_file
-from aiohttp import web, ClientResponse, ClientSession, ClientConnectorError
+from aiohttp import web, ClientResponse, ClientSession, ClientConnectorError, ClientTimeout
 
 import requests
 from Crypto.Signature import pkcs1_15
