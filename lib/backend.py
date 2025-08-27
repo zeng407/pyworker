@@ -75,7 +75,8 @@ class Backend:
     @cached_property
     def session(self):
         log.debug(f"starting session with {self.model_server_url}")
-        return ClientSession(self.model_server_url)
+        timeout = ClientTimeout(total=None)
+        return ClientSession(self.model_server_url, timeout=timeout)
 
     def create_handler(
         self,
