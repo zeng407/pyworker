@@ -11,7 +11,7 @@ from functools import cached_property
 from distutils.util import strtobool
 
 from anyio import open_file
-from aiohttp import web, ClientResponse, ClientSession, ClientConnectorError, ClientTimeout
+from aiohttp import web, ClientResponse, ClientSession, ClientConnectorError, ClientTimeout, TCPConnector
 
 import requests
 from Crypto.Signature import pkcs1_15
@@ -75,8 +75,13 @@ class Backend:
     @cached_property
     def session(self):
         log.debug(f"starting session with {self.model_server_url}")
+        connector = TCPConnector(
+            force_close=True, # Required for long running jobs
+            enable_cleanup_closed=True,
+        )
+        
         timeout = ClientTimeout(total=None)
-        return ClientSession(self.model_server_url, timeout=timeout)
+        return ClientSession(self.model_server_url, timeout=timeout, connector=connector)
 
     def create_handler(
         self,
