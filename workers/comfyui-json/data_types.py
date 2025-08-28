@@ -13,8 +13,9 @@ with open("workers/comfyui/misc/test_prompts.txt", "r") as f:
     test_prompts = f.readlines()
 
 def count_workload() -> float:
-    # Always 1.0 where there is a single instance of ComfyUI handling requests
-    return 1.0
+    # Always 100.0 where there is a single instance of ComfyUI handling requests
+    # Results will indicate % or a job completed per second.  Avoids sub 0.1 sec performance indication
+    return 100.0
 
 @dataclasses.dataclass
 class ComfyWorkflowData(ApiPayload):

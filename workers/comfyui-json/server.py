@@ -70,7 +70,7 @@ class ComfyWorkflowHandler(EndpointHandler[ComfyWorkflowData]):
 
     @property
     def healthcheck_endpoint(self) -> Optional[str]:
-        return None
+        return "/health"
 
     @classmethod
     def payload_cls(cls) -> Type[ComfyWorkflowData]:
