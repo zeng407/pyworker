@@ -121,8 +121,8 @@ CONTROLNET_MODELS_SDXL_DEPTH=(
 )
 
 CLIP_VERSION_MODELS=(
-    "https://huggingface.co/h94/IP-Adapter/resolve/main/models/image_encoder/model.safetensors"
-    "https://huggingface.co/h94/IP-Adapter/resolve/main/sdxl_models/image_encoder/model.safetensors"
+    "https://huggingface.co/h94/IP-Adapter/resolve/main/models/image_encoder/model.safetensors|CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors" # CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors
+    # "https://huggingface.co/h94/IP-Adapter/resolve/main/sdxl_models/image_encoder/model.safetensors"
 )
 
 SAMS_MODELS=(
@@ -193,14 +193,14 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    micromamba -n comfyui run ${PIP_INSTALL} -r "$requirements"
+                    "$COMFYUI_VENV_PIP" install -r "$requirements"
                 fi
             fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                micromamba -n comfyui run ${PIP_INSTALL} -r "${requirements}"
+                "$COMFYUI_VENV_PIP" install -r "${requirements}"
             fi
         fi
     done
@@ -208,7 +208,8 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        micromamba -n comfyui run ${PIP_INSTALL} ${PYTHON_PACKAGES[*]}
+        "$COMFYUI_VENV_PIP" install --no-cache-dir \
+            ${PYTHON_PACKAGES[*]}
     fi
 }
 
@@ -226,8 +227,16 @@ function provisioning_get_models() {
 
     printf "Downloading %s model(s) to %s...\n" "${#arr[@]}" "$dir"
     for url in "${arr[@]}"; do
-        printf "Downloading: %s\n" "${url}"
-        provisioning_download "${url}" "${dir}"
+        # Support custom filename: "url|filename"
+        if [[ "$url" == *"|"* ]]; then
+            model_url="${url%%|*}"
+            model_filename="${url##*|}"
+        else
+            model_url="$url"
+            model_filename=""
+        fi
+        printf "Downloading: %s\n" "${model_url}"
+        provisioning_download "${model_url}" "${dir}" "${model_filename}"
         printf "\n"
     done
 }
@@ -243,10 +252,11 @@ function provisioning_print_end() {
     printf "\nProvisioning complete:  Web UI will start now\n\n"
 }
 
-# Download from $1 URL to $2 file path
+# Download from $1 URL to $2 file path, $3 optional filename
 function provisioning_download() {
     local url="$1"
     local dir="$2"
+    local custom_filename="$3"
     
     # For Civitai URLs, handle redirect and get filename from final URL
     if [[ "$url" == *"civitai.com"* ]]; then
@@ -269,11 +279,17 @@ function provisioning_download() {
         if [[ -z "$filename" ]]; then
             filename="$(basename "$url").safetensors"
         fi
-        
+        if [[ -n "$custom_filename" ]]; then
+            filename="$custom_filename"
+        fi
         printf "Downloading as: %s\n" "$filename"
         wget -O "${dir}/${filename}" "$url"
     else
-        wget --header="Authorization: Bearer $HF_TOKEN" -qnc --content-disposition --show-progress -e dotbytes="${3:-4M}" -P "$dir" "$url"
+        if [[ -n "$custom_filename" ]]; then
+            wget --header="Authorization: Bearer $HF_TOKEN" -qnc --content-disposition --show-progress -e dotbytes="${4:-4M}" -O "${dir}/${custom_filename}" "$url"
+        else
+            wget --header="Authorization: Bearer $HF_TOKEN" -qnc --content-disposition --show-progress -e dotbytes="${4:-4M}" -P "$dir" "$url"
+        fi
     fi
 }
 
