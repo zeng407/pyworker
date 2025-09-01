@@ -193,7 +193,7 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    "$PIP_INSTAL" install -r "$requirements"
+                    "$PIP_INSTAL" -r "$requirements"
                 fi
             fi
         else
