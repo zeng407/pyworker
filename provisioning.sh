@@ -193,14 +193,14 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    "$PIP_INSTAL" -r "$requirements"
+                    "$PIP_INSTALL" -r "$requirements"
                 fi
             fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                "$PIP_INSTAL" -r "${requirements}"
+                "$PIP_INSTALL" -r "${requirements}"
             fi
         fi
     done
@@ -208,7 +208,7 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        "$PIP_INSTAL" ${PYTHON_PACKAGES[*]}
+        "$PIP_INSTALL" ${PYTHON_PACKAGES[*]}
     fi
 }
 
