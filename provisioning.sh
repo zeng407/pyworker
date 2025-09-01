@@ -19,7 +19,7 @@ PYTHON_PACKAGES=(
     "torchsde"
     "torchvision"
     "torchaudio"
-    "numpy<2"
+    "numpy>=1.21.0,<2.0.0"
     "einops"
     "transformers>=4.37.2"
     "tokenizers>=0.13.3"
@@ -34,6 +34,8 @@ PYTHON_PACKAGES=(
     "psutil"
     "alembic"
     "SQLAlchemy"
+    "hydra-core"
+
     # Non essential dependencies
     "kornia>=0.7.1"
     "spandrel"
