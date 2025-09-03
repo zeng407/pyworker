@@ -143,8 +143,6 @@ function provisioning_start() {
     DISK_GB_AVAILABLE=$(($(df --output=avail -m "${WORKSPACE}" | tail -n1) / 1000))
     DISK_GB_USED=$(($(df --output=used -m "${WORKSPACE}" | tail -n1) / 1000))
     DISK_GB_ALLOCATED=$(($DISK_GB_AVAILABLE + $DISK_GB_USED))
-    source /opt/ai-dock/etc/environment.sh
-    source /opt/ai-dock/bin/venv-set.sh comfyui
     provisioning_print_header
     provisioning_get_nodes
     provisioning_install_python_packages
@@ -197,14 +195,14 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    $PIP_INSTALL -r "$requirements"
+                    "$COMFYUI_VENV_PIP" install --no-cache-dir -r "$requirements"
                 fi
             fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                $PIP_INSTALL -r "${requirements}"
+                "$COMFYUI_VENV_PIP" install --no-cache-dir -r "${requirements}"
             fi
         fi
     done
@@ -212,7 +210,7 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        $PIP_INSTALL "${PYTHON_PACKAGES[@]}"
+        "$COMFYUI_VENV_PIP" install --no-cache-dir "${PYTHON_PACKAGES[@]}"
     fi
 }
 
