@@ -131,6 +131,10 @@ SAMS_MODELS=(
     "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
 )
 
+SAM2_MODELS=(
+    "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt"
+)
+
 IPADAPTER_MODELS=(
     "https://huggingface.co/h94/IP-Adapter/resolve/main/models/ip-adapter_sd15.safetensors"
     "https://huggingface.co/h94/IP-Adapter/resolve/main/models/ip-adapter-plus_sd15.safetensors"
@@ -180,6 +184,9 @@ function provisioning_start() {
         "${WORKSPACE}/ComfyUI/models/sams" \
         "${SAMS_MODELS[@]}"
     provisioning_get_models \
+        "${WORKSPACE}/storage/stable_diffusion/models/sam2" \
+        "${SAM2_MODELS[@]}"
+    provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/ipadapter" \
         "${IPADAPTER_MODELS[@]}"
     provisioning_print_end
@@ -195,14 +202,14 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    "$COMFYUI_VENV_PIP" install --no-cache-dir -r "$requirements"
+                    pip install --no-cache-dir -r "$requirements"
                 fi
             fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                "$COMFYUI_VENV_PIP" install --no-cache-dir -r "${requirements}"
+                pip install --no-cache-dir -r "${requirements}"
             fi
         fi
     done
@@ -210,7 +217,7 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        "$COMFYUI_VENV_PIP" install --no-cache-dir "${PYTHON_PACKAGES[@]}"
+        pip install --no-cache-dir "${PYTHON_PACKAGES[@]}"
     fi
 }
 
