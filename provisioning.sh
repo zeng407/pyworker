@@ -157,7 +157,7 @@ function provisioning_start() {
         "${WORKSPACE}/storage/stable_diffusion/models/ckpt/SDXL" \
         "${CHECKPOINT_MODELS_SDXL[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/ComfyUI/models/loras" \
+        "${WORKSPACE}/storage/stable_diffusion/models/loras" \
         "${LORA_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/controlnet" \
@@ -181,7 +181,7 @@ function provisioning_start() {
         "${WORKSPACE}/storage/stable_diffusion/models/clip_vision" \
         "${CLIP_VERSION_MODELS[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/ComfyUI/models/sams" \
+        "${WORKSPACE}/storage/stable_diffusion/models/sams" \
         "${SAMS_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/sam2" \
