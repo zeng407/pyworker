@@ -84,6 +84,39 @@ def call_default_workflow(
 def build_prompt_str(prompt_list):
     return ", ".join(f"({text}:{weight})" for text, weight in prompt_list)
 
+def query_task_status(
+    endpoint_group_name: str,
+    api_key: str,
+    server_url: str,
+    task_id: str,
+) -> dict:
+    """Query task status by task ID"""
+    COST = 0  # Query operations should be free
+    route_payload = {
+        "endpoint": endpoint_group_name,
+        "api_key": api_key,
+        "cost": COST,
+    }
+    response = requests.post(
+        urljoin(server_url, "/route/"),
+        json=route_payload,
+        timeout=4,
+    )
+    response.raise_for_status()
+    message = response.json()
+    url = message["url"]
+    
+    # Query task status
+    task_url = urljoin(url, f"/task/{task_id}")
+    print(f"Querying task status: {task_url}")
+    response = requests.get(
+        task_url,
+        verify=get_cert_file_path(),
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def call_custom_workflow_with_images(
     endpoint_group_name: str,
     api_key: str,
@@ -92,8 +125,8 @@ def call_custom_workflow_with_images(
     user_img: str,
     style: str,
     room: str,
-    task_id: str,
-) -> None:
+    prefix: str,
+) -> dict:
     WORKER_ENDPOINT = "/custom-workflow"
     COST = 100
     route_payload = {
@@ -146,7 +179,7 @@ def call_custom_workflow_with_images(
     negative_prompt = build_prompt_str(room_neg + common_negative_prompts)
     prompt_json["6"]["inputs"]["text"] = positive_prompt
     prompt_json["7"]["inputs"]["text"] = negative_prompt
-    prompt_json["49"]["inputs"]["filename_prefix"] = task_id
+    prompt_json["49"]["inputs"]["filename_prefix"] = prefix
 
     # You may want to update custom_fields based on workflow or user input
     custom_fields = dict(
@@ -169,8 +202,9 @@ def call_custom_workflow_with_images(
     )
     response.raise_for_status()
     res_json = response.json()
-    print_truncate_res(str(res_json))
-    save_images(res_json)
+    # print_truncate_res(str(res_json))
+    # save_images(res_json)
+    return res_json
 
 
 
@@ -180,14 +214,30 @@ if __name__ == "__main__":
     parser.add_argument("-e", dest="endpoint_group_name", type=str, required=True, help="Endpoint group name")
     parser.add_argument("-l", dest="server_url", type=str, default="https://run.vast.ai", help="Server URL")
     parser.add_argument("-i", dest="instance", type=str, default="prod", help="Autoscaler shard, default: prod")
-    parser.add_argument("--workflow", dest="workflow_path", type=str, required=True, help="Path to workflow JSON")
-    parser.add_argument("--user_img", dest="user_img", type=str, required=True, help="Path to user input image")
-    parser.add_argument("--style", dest="style", type=str, required=True, choices=list(styles.keys()), help="Style (style_eu1, style_jp1, style_country)")
-    parser.add_argument("--room", dest="room", type=str, required=True, choices=list(room_prompt.keys()), help="Room type (living_room, dining_room, ...)")
-    parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID for filename prefix")
+    
+    # Subcommands
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # Submit workflow command
+    submit_parser = subparsers.add_parser("submit", help="Submit a workflow")
+    submit_parser.add_argument("--workflow", dest="workflow_path", type=str, required=True, help="Path to workflow JSON")
+    submit_parser.add_argument("--user_img", dest="user_img", type=str, required=True, help="Path to user input image")
+    submit_parser.add_argument("--style", dest="style", type=str, required=True, choices=list(styles.keys()), help="Style (style_eu1, style_jp1, style_country)")
+    submit_parser.add_argument("--room", dest="room", type=str, required=True, choices=list(room_prompt.keys()), help="Room type (living_room, dining_room, ...)")
+    submit_parser.add_argument("--prefix", dest="prefix", type=str, required=True, help="Filename prefix for generated images")
+    
+    # Query task status command
+    query_parser = subparsers.add_parser("query", help="Query task status")
+    query_parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID to query")
 
-    # python3 -m workers.comfyui.client -k ... -e ... --workflow ... --user_img ... --style style_eu1 --room living_room --task_id ...
+    # python3 -m workers.comfyui.client -k ... -e ... submit --workflow ... --user_img ... --style style_eu1 --room living_room --prefix ...
+    # python3 -m workers.comfyui.client -k ... -e ... query --task_id ...
     args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        exit(1)
+    
     endpoint_api_key = Endpoint.get_endpoint_api_key(
         endpoint_name=args.endpoint_group_name,
         account_api_key=args.api_key,
@@ -195,16 +245,28 @@ if __name__ == "__main__":
     )
     if endpoint_api_key:
         try:
-            call_custom_workflow_with_images(
-                endpoint_group_name=args.endpoint_group_name,
-                api_key=endpoint_api_key,
-                server_url=args.server_url,
-                workflow_path=args.workflow_path,
-                user_img=args.user_img,
-                style=args.style,
-                room=args.room,
-                task_id=args.task_id,
-            )
+            if args.command == "submit":
+                res_json = call_custom_workflow_with_images(
+                    endpoint_group_name=args.endpoint_group_name,
+                    api_key=endpoint_api_key,
+                    server_url=args.server_url,
+                    workflow_path=args.workflow_path,
+                    user_img=args.user_img,
+                    style=args.style,
+                    room=args.room,
+                    prefix=args.prefix,
+                )
+                print("Workflow submitted successfully:")
+                print(res_json)
+            elif args.command == "query":
+                res_json = query_task_status(
+                    endpoint_group_name=args.endpoint_group_name,
+                    api_key=endpoint_api_key,
+                    server_url=args.server_url,
+                    task_id=args.task_id,
+                )
+                print("Task status:")
+                print(res_json)
         except Exception as e:
             log.error(f"Error during API call: {e}")
     else:

@@ -94,11 +94,25 @@ python3 -m workers.comfyui.test_load -n 1 -rps 1 -m sd3 -k "<YOUR_API_KEY>" -e "
 
 ### Full Example: Interior Design Workflow
 
-This command runs a test using a specific workflow and image. Replace the API key, endpoint, and image as needed:
+#### Submit a Workflow
+
+This command submits a workflow using a specific image and configuration:
 
 ```bash
-python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" --workflow "workers/comfyui/misc/interior_design_v0.03_linux.json" --user_img "tests/room1.jpeg" --style style_eu1 --room living_room --task_id TASK_ID_1
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" submit --workflow "workers/comfyui/misc/interior_design_v0.03_linux.json" --user_img "tests/room1.jpeg" --style style_eu1 --room living_room --prefix PREFIX
 ```
+
+#### Query Task Status
+
+After submitting a workflow, you can query the task status using the task ID:
+
+```bash
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" query --task_id <id>
+```
+
+Available commands:
+- `submit`: Submit a new workflow for processing
+- `query`: Query the status of an existing task by task ID
 
 ## Community & Support
 

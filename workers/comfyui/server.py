@@ -1,4 +1,4 @@
-from aiohttp import web
+import aiohttp
 import os
 import logging
 import dataclasses
@@ -145,6 +145,30 @@ class DefaultComfyWorkflowHandler(EndpointHandler[DefaultComfyWorkflowData]):
 
 
 @dataclasses.dataclass
+class TaskInfoHandler(EndpointHandler[None]):
+
+    @property
+    def endpoint(self) -> str:
+        return "/result/{id}"
+
+    @property
+    def healthcheck_endpoint(self) -> Optional[str]:
+        return None
+
+    @classmethod
+    def payload_cls(cls) -> Type[None]:
+        return None
+
+    def make_benchmark_payload(self) -> None:
+        return None
+
+    async def generate_client_response(
+        self, client_request: web.Request, model_response: ClientResponse
+    ) -> Union[web.Response, web.StreamResponse]:
+        return await generate_client_response(client_request, model_response)
+
+
+@dataclasses.dataclass
 class CustomComfyWorkflowHandler(EndpointHandler[CustomComfyWorkflowData]):
 
     @property
@@ -189,12 +213,24 @@ backend = Backend(
 async def handle_ping(_):
     return web.Response(body="pong")
 
+async def handle_task_info(request):
+    request_id = request.match_info.get('id')
+    if not request_id:
+        return web.json_response({'error': 'No task id provided'}, status=400)
+    
+    # Create a new request path with the task_id
+    new_request = request.clone(rel_url=f"/result/{request_id}")
+    
+    # Use the TaskInfoHandler through backend
+    handler = TaskInfoHandler()
+    return await backend.create_handler(handler)(new_request)
 
 routes = [
     web.post("/prompt", backend.create_handler(DefaultComfyWorkflowHandler())),
     web.post("/custom-workflow", backend.create_handler(CustomComfyWorkflowHandler())),
     web.get("/ping", handle_ping),
     web.post("/upload/image", handle_upload_image),
+    web.get("/task/{id}", handle_task_info),
 ]
 
 if __name__ == "__main__":
