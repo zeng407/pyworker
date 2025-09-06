@@ -166,6 +166,75 @@ def download_file(
     print(f"Successfully downloaded: {output_path} (size: {file_size} bytes)")
 
 
+def download_all_task_files(
+    endpoint_group_name: str,
+    api_key: str,
+    server_url: str,
+    task_id: str,
+    output_dir: str = "downloads"
+) -> None:
+    """Query task status and download all output files"""
+    print(f"Querying task {task_id} and downloading all files...")
+    
+    # First, query the task status
+    task_status = query_task_status(
+        endpoint_group_name=endpoint_group_name,
+        api_key=api_key,
+        server_url=server_url,
+        task_id=task_id,
+    )
+    
+    print("Task status:")
+    print(task_status)
+    
+    # Extract file paths from output
+    if "output" not in task_status or not task_status["output"]:
+        print("No output files found in task status")
+        return
+    
+    downloaded_files = []
+    for output_item in task_status["output"]:
+        file_path = None
+        
+        if isinstance(output_item, dict):
+            if "local_path" in output_item:
+                # Extract relative path from local_path
+                # e.g., "/opt/ComfyUI/output/99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00001_.png"
+                # becomes "99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00001_.png"
+                local_path = output_item["local_path"]
+                if local_path.startswith("/opt/ComfyUI/output/"):
+                    file_path = local_path[len("/opt/ComfyUI/output/"):]
+                else:
+                    # Fallback: just use the filename
+                    file_path = os.path.basename(local_path)
+            elif "filename" in output_item:
+                # Handle the old format with filename and subfolder
+                if "subfolder" in output_item and output_item["subfolder"]:
+                    file_path = f"{output_item['subfolder']}/{output_item['filename']}"
+                else:
+                    file_path = output_item["filename"]
+        
+        if file_path:
+            print(f"Downloading: {file_path}")
+            try:
+                download_file(
+                    endpoint_group_name=endpoint_group_name,
+                    api_key=api_key,
+                    server_url=server_url,
+                    file_path=file_path,
+                    output_dir=output_dir,
+                )
+                downloaded_files.append(file_path)
+            except Exception as e:
+                print(f"Error downloading {file_path}: {e}")
+        else:
+            print(f"Could not extract file path from output item: {output_item}")
+    
+    print(f"Downloaded {len(downloaded_files)} files to {output_dir}/")
+    for file_path in downloaded_files:
+        print(f"  - {file_path}")
+
+
 def call_custom_workflow_with_images(
     endpoint_group_name: str,
     api_key: str,
@@ -278,15 +347,30 @@ if __name__ == "__main__":
     # Query task status command
     query_parser = subparsers.add_parser("query", help="Query task status")
     query_parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID to query")
+    query_parser.add_argument("--json", dest="output_json", action="store_true", help="Output file paths as JSON for piping to other commands")
     
     # Download file command
     download_parser = subparsers.add_parser("download", help="Download a file from ComfyUI output")
     download_parser.add_argument("--path", dest="file_path", type=str, required=True, help="File path relative to ComfyUI output directory (e.g., 99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png)")
     download_parser.add_argument("--output", dest="output_dir", type=str, default="downloads", help="Output directory for downloaded files (default: downloads)")
+    
+    # Download all files from a task command
+    download_all_parser = subparsers.add_parser("download-all", help="Query task status and download all output files")
+    download_all_parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID to query and download files from")
+    download_all_parser.add_argument("--output", dest="output_dir", type=str, default="downloads", help="Output directory for downloaded files (default: downloads)")
+    
+    # Download from JSON input (for piping)
+    download_json_parser = subparsers.add_parser("download-from-json", help="Download files from JSON input (for piping)")
+    download_json_parser.add_argument("--json", dest="json_input", type=str, help="JSON string with file paths (if not provided, reads from stdin)")
+    download_json_parser.add_argument("--output", dest="output_dir", type=str, default="downloads", help="Output directory for downloaded files (default: downloads)")
 
     # python3 -m workers.comfyui.client -k ... -e ... submit --workflow ... --user_img ... --style style_eu1 --room living_room --prefix ...
     # python3 -m workers.comfyui.client -k ... -e ... query --task_id ...
     # python3 -m workers.comfyui.client -k ... -e ... download --path 99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png
+    # python3 -m workers.comfyui.client -k ... -e ... download-all --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75
+    # 
+    # Pipeline examples:
+    # python3 -m workers.comfyui.client -k ... -e ... query --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75 --json | python3 -m workers.comfyui.client -k ... -e ... download-from-json
     args = parser.parse_args()
     
     if not args.command:
@@ -320,8 +404,38 @@ if __name__ == "__main__":
                     server_url=args.server_url,
                     task_id=args.task_id,
                 )
-                print("Task status:")
-                print(res_json)
+                
+                if args.output_json:
+                    # Extract file paths for piping
+                    file_paths = []
+                    if "output" in res_json and res_json["output"]:
+                        for output_item in res_json["output"]:
+                            if isinstance(output_item, dict):
+                                if "local_path" in output_item:
+                                    # Extract relative path from local_path
+                                    local_path = output_item["local_path"]
+                                    if local_path.startswith("/opt/ComfyUI/output/"):
+                                        file_path = local_path[len("/opt/ComfyUI/output/"):]
+                                    else:
+                                        file_path = os.path.basename(local_path)
+                                    file_paths.append(file_path)
+                                elif "filename" in output_item:
+                                    # Handle the old format
+                                    if "subfolder" in output_item and output_item["subfolder"]:
+                                        file_path = f"{output_item['subfolder']}/{output_item['filename']}"
+                                    else:
+                                        file_path = output_item["filename"]
+                                    file_paths.append(file_path)
+                    
+                    import json
+                    print(json.dumps({
+                        "task_id": args.task_id,
+                        "status": res_json.get("status"),
+                        "file_paths": file_paths
+                    }))
+                else:
+                    print("Task status:")
+                    print(res_json)
             elif args.command == "download":
                 download_file(
                     endpoint_group_name=args.endpoint_group_name,
@@ -331,6 +445,45 @@ if __name__ == "__main__":
                     output_dir=args.output_dir,
                 )
                 print("File downloaded successfully!")
+            elif args.command == "download-all":
+                download_all_task_files(
+                    endpoint_group_name=args.endpoint_group_name,
+                    api_key=endpoint_api_key,
+                    server_url=args.server_url,
+                    task_id=args.task_id,
+                    output_dir=args.output_dir,
+                )
+                print("All files downloaded successfully!")
+            elif args.command == "download-from-json":
+                import json
+                import sys
+                
+                # Get JSON input
+                if args.json_input:
+                    json_data = json.loads(args.json_input)
+                else:
+                    # Read from stdin
+                    json_data = json.loads(sys.stdin.read())
+                
+                file_paths = json_data.get("file_paths", [])
+                print(f"Downloading {len(file_paths)} files from JSON input...")
+                
+                downloaded_files = []
+                for file_path in file_paths:
+                    print(f"Downloading: {file_path}")
+                    try:
+                        download_file(
+                            endpoint_group_name=args.endpoint_group_name,
+                            api_key=endpoint_api_key,
+                            server_url=args.server_url,
+                            file_path=file_path,
+                            output_dir=args.output_dir,
+                        )
+                        downloaded_files.append(file_path)
+                    except Exception as e:
+                        print(f"Error downloading {file_path}: {e}")
+                
+                print(f"Downloaded {len(downloaded_files)} files successfully!")
         except Exception as e:
             log.error(f"Error during API call: {e}")
     else:
