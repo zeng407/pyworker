@@ -145,30 +145,6 @@ class DefaultComfyWorkflowHandler(EndpointHandler[DefaultComfyWorkflowData]):
 
 
 @dataclasses.dataclass
-class TaskInfoHandler(EndpointHandler[None]):
-
-    @property
-    def endpoint(self) -> str:
-        return "/result/{id}"
-
-    @property
-    def healthcheck_endpoint(self) -> Optional[str]:
-        return None
-
-    @classmethod
-    def payload_cls(cls) -> Type[None]:
-        return None
-
-    def make_benchmark_payload(self) -> None:
-        return None
-
-    async def generate_client_response(
-        self, client_request: web.Request, model_response: ClientResponse
-    ) -> Union[web.Response, web.StreamResponse]:
-        return await generate_client_response(client_request, model_response)
-
-
-@dataclasses.dataclass
 class CustomComfyWorkflowHandler(EndpointHandler[CustomComfyWorkflowData]):
 
     @property
@@ -217,13 +193,16 @@ async def handle_task_info(request):
     request_id = request.match_info.get('id')
     if not request_id:
         return web.json_response({'error': 'No task id provided'}, status=400)
-    
-    # Create a new request path with the task_id
-    new_request = request.clone(rel_url=f"/result/{request_id}")
-    
-    # Use the TaskInfoHandler through backend
-    handler = TaskInfoHandler()
-    return await backend.create_handler(handler)(new_request)
+    comfyui_url = f"{MODEL_SERVER_URL}/result/{request_id}"
+    log.debug(f"Proxying GET /result/{request_id} to {comfyui_url}")
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(comfyui_url) as resp:
+                # Use the same response handling logic as CustomComfyWorkflowHandler
+                return await generate_client_response(request, resp)
+    except Exception as e:
+        log.error(f"Error proxying to ComfyUI: {e}")
+        return web.json_response({'error': str(e)}, status=500)
 
 routes = [
     web.post("/prompt", backend.create_handler(DefaultComfyWorkflowHandler())),
