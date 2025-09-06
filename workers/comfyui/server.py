@@ -6,7 +6,6 @@ import base64
 from typing import Optional, Union, Type
 
 from aiohttp import web, ClientResponse
-from anyio import open_file
 
 from lib.backend import Backend, LogAction
 from lib.data_types import EndpointHandler
@@ -200,8 +199,21 @@ async def handle_download_output(request):
     if not path:
         return web.json_response({'error': 'No path provided'}, status=400)
     
+    # Security: Prevent path traversal attacks
+    # Normalize the path and ensure it doesn't contain '..' or absolute paths
+    normalized_path = os.path.normpath(path)
+    if normalized_path.startswith('/') or '..' in normalized_path or normalized_path.startswith('..'):
+        log.error(f"Invalid path detected (potential path traversal): {path}")
+        return web.json_response({'error': 'Invalid path'}, status=400)
+    
     # Full file path in ComfyUI output directory
-    full_path = f"/opt/ComfyUI/output/{path}"
+    base_dir = os.path.abspath("/opt/ComfyUI/output")
+    full_path = os.path.join(base_dir, normalized_path)
+    
+    # Ensure the resolved path is still within the base directory
+    if not full_path.startswith(base_dir):
+        log.error(f"Path traversal attempt detected: {path} -> {full_path}")
+        return web.json_response({'error': 'Access denied'}, status=403)
     
     log.debug(f"Attempting to download file: {full_path}")
     
@@ -217,11 +229,11 @@ async def handle_download_output(request):
             return web.json_response({'error': f'Path is not a file: {path}'}, status=400)
         
         # Read and return the file
-        async with open_file(full_path, 'rb') as f:
-            content = await f.read()
+        with open(full_path, 'rb') as f:
+            content = f.read()
         
         # Determine content type based on file extension
-        filename = os.path.basename(path)
+        filename = os.path.basename(normalized_path)
         if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
             content_type = 'image/png' if filename.lower().endswith('.png') else 'image/jpeg'
         else:

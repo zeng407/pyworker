@@ -110,9 +110,24 @@ After submitting a workflow, you can query the task status using the task ID:
 python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" query --task_id <id>
 ```
 
+#### Download Generated Images
+
+Once a task is completed, you can download the generated images using the file paths from the task status:
+
+```bash
+# Download a specific image file
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" download --path "99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png"
+
+# Download to a custom directory
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" download --path "99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png" --output "my_images"
+```
+
+**Note:** The file path should be the relative path from the ComfyUI output directory (`/opt/ComfyUI/output/`). You can get these paths from the task status query response.
+
 Available commands:
 - `submit`: Submit a new workflow for processing
 - `query`: Query the status of an existing task by task ID
+- `download`: Download generated images from completed tasks
 
 ## Community & Support
 

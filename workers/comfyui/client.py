@@ -117,6 +117,55 @@ def query_task_status(
     return response.json()
 
 
+def download_file(
+    endpoint_group_name: str,
+    api_key: str,
+    server_url: str,
+    file_path: str,
+    output_dir: str = "downloads"
+) -> None:
+    """Download a file from ComfyUI output directory"""
+    route_payload = {
+        "endpoint": endpoint_group_name,
+        "api_key": api_key,
+        "cost": 0,  # Download should be free
+    }
+    response = requests.post(
+        urljoin(server_url, "/route/"),
+        json=route_payload,
+        timeout=4,
+    )
+    response.raise_for_status()
+    message = response.json()
+    url = message["url"]
+    
+    # Download the file
+    download_url = urljoin(url, f"/download/{file_path}")
+    print(f"Downloading from: {download_url}")
+    
+    response = requests.get(
+        download_url,
+        verify=get_cert_file_path(),
+        stream=True
+    )
+    response.raise_for_status()
+    
+    # Create output directory
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Extract filename from path
+    filename = os.path.basename(file_path)
+    output_path = os.path.join(output_dir, filename)
+    
+    # Save the file
+    with open(output_path, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            f.write(chunk)
+    
+    file_size = os.path.getsize(output_path)
+    print(f"Successfully downloaded: {output_path} (size: {file_size} bytes)")
+
+
 def call_custom_workflow_with_images(
     endpoint_group_name: str,
     api_key: str,
@@ -229,9 +278,15 @@ if __name__ == "__main__":
     # Query task status command
     query_parser = subparsers.add_parser("query", help="Query task status")
     query_parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID to query")
+    
+    # Download file command
+    download_parser = subparsers.add_parser("download", help="Download a file from ComfyUI output")
+    download_parser.add_argument("--path", dest="file_path", type=str, required=True, help="File path relative to ComfyUI output directory (e.g., 99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png)")
+    download_parser.add_argument("--output", dest="output_dir", type=str, default="downloads", help="Output directory for downloaded files (default: downloads)")
 
     # python3 -m workers.comfyui.client -k ... -e ... submit --workflow ... --user_img ... --style style_eu1 --room living_room --prefix ...
     # python3 -m workers.comfyui.client -k ... -e ... query --task_id ...
+    # python3 -m workers.comfyui.client -k ... -e ... download --path 99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png
     args = parser.parse_args()
     
     if not args.command:
@@ -267,6 +322,15 @@ if __name__ == "__main__":
                 )
                 print("Task status:")
                 print(res_json)
+            elif args.command == "download":
+                download_file(
+                    endpoint_group_name=args.endpoint_group_name,
+                    api_key=endpoint_api_key,
+                    server_url=args.server_url,
+                    file_path=args.file_path,
+                    output_dir=args.output_dir,
+                )
+                print("File downloaded successfully!")
         except Exception as e:
             log.error(f"Error during API call: {e}")
     else:
