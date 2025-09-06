@@ -194,12 +194,57 @@ async def handle_task_info(request):
         log.error(f"Error proxying to ComfyUI: {e}")
         return web.json_response({'error': str(e)}, status=500)
 
+async def handle_download_output(request):
+    # Get the path from the URL, e.g., /99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png
+    path = request.match_info.get('path')
+    if not path:
+        return web.json_response({'error': 'No path provided'}, status=400)
+    
+    # Full file path in ComfyUI output directory
+    full_path = f"/opt/ComfyUI/output/{path}"
+    
+    log.debug(f"Attempting to download file: {full_path}")
+    
+    try:
+        # Check if file exists
+        if not os.path.exists(full_path):
+            log.error(f"File not found: {full_path}")
+            return web.json_response({'error': f'File not found: {path}'}, status=404)
+        
+        # Check if it's a file (not directory)
+        if not os.path.isfile(full_path):
+            log.error(f"Path is not a file: {full_path}")
+            return web.json_response({'error': f'Path is not a file: {path}'}, status=400)
+        
+        # Read and return the file
+        async with open_file(full_path, 'rb') as f:
+            content = await f.read()
+        
+        # Determine content type based on file extension
+        filename = os.path.basename(path)
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+            content_type = 'image/png' if filename.lower().endswith('.png') else 'image/jpeg'
+        else:
+            content_type = 'application/octet-stream'
+        
+        log.debug(f"Successfully serving file: {full_path} (size: {len(content)} bytes)")
+        return web.Response(
+            body=content,
+            content_type=content_type,
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+        
+    except Exception as e:
+        log.error(f"Error downloading file {full_path}: {e}")
+        return web.json_response({'error': str(e)}, status=500)
+
 routes = [
     web.post("/prompt", backend.create_handler(DefaultComfyWorkflowHandler())),
     web.post("/custom-workflow", backend.create_handler(CustomComfyWorkflowHandler())),
     web.get("/ping", handle_ping),
     web.post("/upload/image", handle_upload_image),
     web.get("/task/{id}", handle_task_info),
+    web.get("/download/{path:.*}", handle_download_output),
 ]
 
 if __name__ == "__main__":
