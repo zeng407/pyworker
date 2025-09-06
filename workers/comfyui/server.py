@@ -90,6 +90,7 @@ async def generate_client_response(
         case 200:
             log.debug("SUCCESS")
             res = await response.json()
+            log.debug(f"Model server response JSON: {res}")
             if "output" not in res:
                 return web.json_response(
                     data=dict(error="there was an error in the workflow"),
@@ -109,8 +110,13 @@ async def generate_client_response(
                         f"data:image/png;base64,{base64.b64encode(contents).decode('utf-8')}"
                     )
             return web.json_response(data=dict(images=images))
+        case 202:
+            # Accepted, but not completed. Return the content as JSON.
+            res = await response.json()
+            log.debug(f"SENDING RESPONSE: 202 Accepted, content: {res}")
+            return web.json_response(res, status=202)
         case code:
-            log.debug("SENDING RESPONSE: ERROR: unknown code")
+            log.debug(f"SENDING RESPONSE: ERROR: unknown code {code}")
             return web.Response(status=code)
 
 
@@ -143,7 +149,7 @@ class CustomComfyWorkflowHandler(EndpointHandler[CustomComfyWorkflowData]):
 
     @property
     def endpoint(self) -> str:
-        return "/runsync"
+        return "/payload"
 
     @property
     def healthcheck_endpoint(self) -> Optional[str]:
@@ -155,24 +161,6 @@ class CustomComfyWorkflowHandler(EndpointHandler[CustomComfyWorkflowData]):
 
     def make_benchmark_payload(self) -> CustomComfyWorkflowData:
         return CustomComfyWorkflowData.for_test()
-
-    def _convert_image_paths_to_absolute(self, workflow: dict) -> dict:
-        """Convert relative image paths in workflow to absolute paths"""
-        import copy
-        workflow_copy = copy.deepcopy(workflow)
-        
-        for node_id, node_data in workflow_copy.items():
-            if isinstance(node_data, dict) and "inputs" in node_data:
-                inputs = node_data["inputs"]
-                if isinstance(inputs, dict) and "image" in inputs:
-                    image_path = inputs["image"]
-                    if isinstance(image_path, str) and not os.path.isabs(image_path):
-                        # Convert relative path to absolute path
-                        abs_path = os.path.abspath(image_path)
-                        inputs["image"] = abs_path
-                        log.debug(f"Converted image path: {image_path} -> {abs_path}")
-        
-        return workflow_copy
 
     async def generate_client_response(
         self, client_request: web.Request, model_response: ClientResponse

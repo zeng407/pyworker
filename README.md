@@ -83,12 +83,21 @@ Replace `workers.hello_world.test_load` with the path to your worker's test scri
 
 ## Example Test Commands for ComfyUI Worker
 
+
 You can test the ComfyUI worker using the following commands. Replace `<YOUR_API_KEY>` with your actual Vast.ai API key and `<ENDPOINT_GROUP_NAME>` with your endpoint group name:
 
 ```bash
 python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "<ENDPOINT_GROUP_NAME>"
 
 python3 -m workers.comfyui.test_load -n 1 -rps 1 -m sd3 -k "<YOUR_API_KEY>" -e "<ENDPOINT_GROUP_NAME>"
+```
+
+### Full Example: Interior Design Workflow
+
+This command runs a test using a specific workflow and image. Replace the API key, endpoint, and image as needed:
+
+```bash
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" --workflow "workers/comfyui/misc/interior_design_v0.03_linux.json" --user_img "tests/room1.jpeg" --style style_eu1 --room living_room --task_id TASK_ID_1
 ```
 
 ## Community & Support

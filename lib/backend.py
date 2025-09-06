@@ -148,6 +148,7 @@ class Backend:
                         [
                             f"request with reqnum:{auth_data.reqnum}",
                             f"returned status code: {status_code},",
+                            f"response content: {await response.text()}",
                         ]
                     )
                 )
