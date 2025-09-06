@@ -91,25 +91,15 @@ async def generate_client_response(
             log.debug("SUCCESS")
             res = await response.json()
             log.debug(f"Model server response JSON: {res}")
-            if "output" not in res:
-                return web.json_response(
-                    data=dict(error="there was an error in the workflow"),
-                    status=422,
-                )
-            image_paths = [path["local_path"] for path in res["output"]["images"]]
-            if not image_paths:
-                return web.json_response(
-                    data=dict(error="workflow did not produce any images"),
-                    status=422,
-                )
-            images = []
-            for image_path in image_paths:
-                async with await open_file(image_path, mode="rb") as f:
-                    contents = await f.read()
-                    images.append(
-                        f"data:image/png;base64,{base64.b64encode(contents).decode('utf-8')}"
-                    )
-            return web.json_response(data=dict(images=images))
+            
+            # Return only essential fields for task status
+            simplified_response = {
+                "id": res.get("id"),
+                "message": res.get("message"),
+                "status": res.get("status"),
+                "output": res.get("output", [])
+            }
+            return web.json_response(simplified_response)
         case 202:
             # Accepted, but not completed. Return the content as JSON.
             res = await response.json()
