@@ -4,6 +4,11 @@
 
 # https://raw.githubusercontent.com/ai-dock/comfyui/main/config/provisioning/sd3.sh
 
+# Set pip command with fallback
+if [ -z "${COMFYUI_VENV_PIP}" ]; then
+    COMFYUI_VENV_PIP="/opt/environments/python/comfyui/bin/pip"
+fi
+
 # Packages are installed after nodes so we can fix them...
 
 if [ -z "${HF_TOKEN}" ]; then
@@ -202,14 +207,14 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                    pip install --no-cache-dir -r "$requirements"
+                    $COMFYUI_VENV_PIP install --no-cache-dir -r "$requirements"
                 fi
             fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
-                pip install --no-cache-dir -r "${requirements}"
+                $COMFYUI_VENV_PIP install --no-cache-dir -r "${requirements}"
             fi
         fi
     done
@@ -217,7 +222,7 @@ function provisioning_get_nodes() {
 
 function provisioning_install_python_packages() {
     if [ ${#PYTHON_PACKAGES[@]} -gt 0 ]; then
-        pip install --no-cache-dir "${PYTHON_PACKAGES[@]}"
+        $COMFYUI_VENV_PIP install --no-cache-dir "${PYTHON_PACKAGES[@]}"
     fi
 }
 
