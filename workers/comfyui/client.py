@@ -3,14 +3,15 @@ from urllib.parse import urljoin
 import os
 import base64
 import time
-import json
 import argparse
-from workers.comfyui.prompt_config import styles, room_prompt, common_negative_prompts
+from workers.comfyui.prompt_config import styles, room_prompt, common_negative_prompts, style_id_mapping
 from pathlib import Path
 import requests
 from lib.test_utils import print_truncate_res
 from utils.endpoint_util import Endpoint
 from utils.ssl import get_cert_file_path
+import json
+
 
 def save_images(res_json):
     if isinstance(res_json, dict) and "images" in res_json:
@@ -83,6 +84,19 @@ def call_default_workflow(
 
 def build_prompt_str(prompt_list):
     return ", ".join(f"({text}:{weight})" for text, weight in prompt_list)
+
+def resolve_style_name(style_input):
+    """Convert numeric style_id to style name"""
+    # If it's already a valid style name, return as is
+    if style_input in styles:
+        return style_input
+    
+    # If it's a number (string or int), map it to style name
+    if style_input in style_id_mapping:
+        return style_id_mapping[style_input]
+    
+    # If no mapping found, raise an error
+    raise ValueError(f"Invalid style: {style_input}. Valid options: {list(styles.keys())} or numbers 0-2")
 
 def query_task_status(
     endpoint_group_name: str,
@@ -282,7 +296,10 @@ def call_custom_workflow_with_images(
             return resp.json()["path"]
 
     user_img_filename = upload_image(user_img)
-    style_img_path = styles[style]["img"]
+    
+    # Resolve style name from input (handle numeric style_id)
+    resolved_style = resolve_style_name(style)
+    style_img_path = styles[resolved_style]["img"]
     style_img_filename = style_img_path
 
     prompt_json["14"]["inputs"]["image"] = user_img_filename
@@ -290,7 +307,7 @@ def call_custom_workflow_with_images(
 
 
     # Build positive/negative prompt
-    style_prompts = styles[style]["prompts"]
+    style_prompts = styles[resolved_style]["prompts"]
     room_pos = room_prompt[room]["positive"]
     room_neg = room_prompt[room]["negative"]
     positive_prompt = build_prompt_str(style_prompts + room_pos)
@@ -340,14 +357,16 @@ if __name__ == "__main__":
     submit_parser = subparsers.add_parser("submit", help="Submit a workflow")
     submit_parser.add_argument("--workflow", dest="workflow_path", type=str, required=True, help="Path to workflow JSON")
     submit_parser.add_argument("--user_img", dest="user_img", type=str, required=True, help="Path to user input image")
-    submit_parser.add_argument("--style", dest="style", type=str, required=True, choices=list(styles.keys()), help="Style (style_eu1, style_jp1, style_country)")
+    submit_parser.add_argument("--style", dest="style", type=str, required=True, help="Style (style_eu1, style_jp1, style_country) or numeric ID (0, 1, 2)")
     submit_parser.add_argument("--room", dest="room", type=str, required=True, choices=list(room_prompt.keys()), help="Room type (living_room, dining_room, ...)")
     submit_parser.add_argument("--prefix", dest="prefix", type=str, required=True, help="Filename prefix for generated images")
+    submit_parser.add_argument("--output", dest="output_file", type=str, required=True, help="Output file to save the submit result (JSON format)")
     
     # Query task status command
     query_parser = subparsers.add_parser("query", help="Query task status")
     query_parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID to query")
     query_parser.add_argument("--json", dest="output_json", action="store_true", help="Output file paths as JSON for piping to other commands")
+    query_parser.add_argument("--output", dest="output_file", type=str, required=True, help="Output file to save the query result (JSON format)")
     
     # Download file command
     download_parser = subparsers.add_parser("download", help="Download a file from ComfyUI output")
@@ -364,13 +383,13 @@ if __name__ == "__main__":
     download_json_parser.add_argument("--json", dest="json_input", type=str, help="JSON string with file paths (if not provided, reads from stdin)")
     download_json_parser.add_argument("--output", dest="output_dir", type=str, default="downloads", help="Output directory for downloaded files (default: downloads)")
 
-    # python3 -m workers.comfyui.client -k ... -e ... submit --workflow ... --user_img ... --style style_eu1 --room living_room --prefix ...
-    # python3 -m workers.comfyui.client -k ... -e ... query --task_id ...
+    # python3 -m workers.comfyui.client -k ... -e ... submit --workflow ... --user_img ... --style style_eu1 --room living_room --prefix ... --output submit_result.json
+    # python3 -m workers.comfyui.client -k ... -e ... query --task_id ... --output query_result.json
     # python3 -m workers.comfyui.client -k ... -e ... download --path 99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png
     # python3 -m workers.comfyui.client -k ... -e ... download-all --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75
     # 
     # Pipeline examples:
-    # python3 -m workers.comfyui.client -k ... -e ... query --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75 --json | python3 -m workers.comfyui.client -k ... -e ... download-from-json
+    # python3 -m workers.comfyui.client -k ... -e ... query --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75 --output query_result.json --json | python3 -m workers.comfyui.client -k ... -e ... download-from-json
     args = parser.parse_args()
     
     if not args.command:
@@ -395,7 +414,13 @@ if __name__ == "__main__":
                     room=args.room,
                     prefix=args.prefix,
                 )
-                print("Workflow submitted successfully:")
+                
+                # Save result to output file
+                with open(args.output_file, 'w') as f:
+                    json.dump(res_json, f, indent=2)
+                
+                print(f"Workflow submitted successfully! Result saved to: {args.output_file}")
+                print(f"Task ID: {res_json.get('id', 'N/A')}")
                 print(res_json)
             elif args.command == "query":
                 res_json = query_task_status(
@@ -404,6 +429,10 @@ if __name__ == "__main__":
                     server_url=args.server_url,
                     task_id=args.task_id,
                 )
+                
+                # Save result to output file
+                with open(args.output_file, 'w') as f:
+                    json.dump(res_json, f, indent=2)
                 
                 if args.output_json:
                     # Extract file paths for piping
@@ -427,14 +456,16 @@ if __name__ == "__main__":
                                         file_path = output_item["filename"]
                                     file_paths.append(file_path)
                     
-                    import json
+                    # Output JSON for piping (to stdout)
                     print(json.dumps({
                         "task_id": args.task_id,
                         "status": res_json.get("status"),
                         "file_paths": file_paths
                     }))
                 else:
-                    print("Task status:")
+                    print(f"Task status queried successfully! Result saved to: {args.output_file}")
+                    print(f"Task ID: {args.task_id}")
+                    print(f"Status: {res_json.get('status', 'N/A')}")
                     print(res_json)
             elif args.command == "download":
                 download_file(
@@ -455,7 +486,6 @@ if __name__ == "__main__":
                 )
                 print("All files downloaded successfully!")
             elif args.command == "download-from-json":
-                import json
                 import sys
                 
                 # Get JSON input

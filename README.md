@@ -96,38 +96,67 @@ python3 -m workers.comfyui.test_load -n 1 -rps 1 -m sd3 -k "<YOUR_API_KEY>" -e "
 
 #### Submit a Workflow
 
-This command submits a workflow using a specific image and configuration:
+This command submits a workflow using a specific image and configuration. Results are saved to a JSON file:
 
 ```bash
-python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" submit --workflow "workers/comfyui/misc/interior_design_v0.03_linux.json" --user_img "tests/room1.jpeg" --style style_eu1 --room living_room --prefix PREFIX
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" submit \
+  --workflow "workers/comfyui/misc/interior_design_v0.03_linux.json" \
+  --user_img "tests/room1.jpeg" \
+  --style style_eu1 \
+  --room living_room \
+  --prefix PREFIX \
+  --output submit_result.json
 ```
+
+**Style Options:**
+- Use style names: `style_eu1`, `style_jp1`, `style_country`
+- Or use numeric IDs: `0`, `1`, `2` (corresponding to the above styles)
 
 #### Query Task Status
 
-After submitting a workflow, you can query the task status using the task ID:
+After submitting a workflow, you can query the task status using the task ID. Results are saved to a JSON file:
 
 ```bash
-python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" query --task_id <id>
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" query \
+  --task_id <id> \
+  --output query_result.json
 ```
 
 #### Download Generated Images
 
-Once a task is completed, you can download the generated images using the file paths from the task status:
+Once a task is completed, you can download the generated images:
 
 ```bash
 # Download a specific image file
-python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" download --path "99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png"
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" download \
+  --path "99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png"
 
-# Download to a custom directory
-python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" download --path "99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png" --output "my_images"
+# Download all files from a completed task
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" download-all \
+  --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75 \
+  --output "downloads"
+```
+
+#### Pipeline Commands
+
+For advanced usage, you can chain commands using JSON output:
+
+```bash
+# Query task and pipe results to download command
+python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" query \
+  --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75 \
+  --output query_result.json \
+  --json | python3 -m workers.comfyui.client -k "<YOUR_API_KEY>" -e "comfyui-test" download-from-json
 ```
 
 **Note:** The file path should be the relative path from the ComfyUI output directory (`/opt/ComfyUI/output/`). You can get these paths from the task status query response.
 
 Available commands:
-- `submit`: Submit a new workflow for processing
-- `query`: Query the status of an existing task by task ID
-- `download`: Download generated images from completed tasks
+- `submit`: Submit a new workflow for processing (requires `--output` to save results)
+- `query`: Query the status of an existing task by task ID (requires `--output` to save results)
+- `download`: Download a specific generated image file
+- `download-all`: Query task status and download all output files automatically
+- `download-from-json`: Download files from JSON input (useful for piping)
 
 ## Community & Support
 

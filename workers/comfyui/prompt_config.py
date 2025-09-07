@@ -1,5 +1,15 @@
 # prompt_config.py
 
+# Style ID mapping from numbers to style names
+style_id_mapping = {
+    "0": "style_eu1",
+    "1": "style_jp1", 
+    "2": "style_country",
+    0: "style_eu1",
+    1: "style_jp1",
+    2: "style_country"
+}
+
 styles = {
     "style_eu1": {
         "img": "workers/comfyui/misc/style_eu1.jpg",
@@ -10,7 +20,7 @@ styles = {
         ],
     },
     "style_jp1": {
-        "img": "style_jp1.png",
+        "img": "workers/comfyui/misc/style_jp1.png",
         "prompts": [
             ("Traditional Japanese interior with warm dark wood tones, natural materials, clean symmetry and quiet order, inspired by wabi-sabi aesthetics", 1.1),
             ("Shoji paper doors, wooden lattice screens, tatami mats, minimal furnishings", 1.0),
@@ -18,7 +28,7 @@ styles = {
         ],
     },
     "style_country": {
-        "img": "style_country.jpg",
+        "img": "workers/comfyui/misc/style_country.jpg",
         "prompts": [
             ("Vintage English country house style, with aged wooden furniture, floral and botanical patterns, natural materials, warm and nostalgic atmosphere", 1.1),
             ("Exposed wooden beams, plaster walls, terracotta or stone flooring", 1.0),
