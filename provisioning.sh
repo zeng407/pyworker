@@ -79,7 +79,6 @@ CHECKPOINT_MODELS_SDXL=(
 LORA_MODELS=(
     #"https://civitai.com/api/download/models/16576"
     "https://civitai.com/api/download/models/30384" #xsarchitectural-7.safetensors
-
 )
 
 VAE_MODELS_SDXL=(
@@ -162,7 +161,7 @@ function provisioning_start() {
         "${WORKSPACE}/storage/stable_diffusion/models/ckpt/SDXL" \
         "${CHECKPOINT_MODELS_SDXL[@]}"
     provisioning_get_models \
-        "${WORKSPACE}/storage/stable_diffusion/models/loras" \
+        "${WORKSPACE}/storage/stable_diffusion/models/lora" \
         "${LORA_MODELS[@]}"
     provisioning_get_models \
         "${WORKSPACE}/storage/stable_diffusion/models/controlnet" \
