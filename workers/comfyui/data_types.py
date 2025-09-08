@@ -32,12 +32,14 @@ class ImageUploadData(ApiPayload):
         # Approximately equivalent to a very small image generation request
         return 1.0
     
-    def to_json(self) -> Dict[str, Any]:
-        # Convert to JSON for API forwarding (excluding binary data)
+    def generate_payload_json(self) -> Dict[str, Any]:
+        # Image upload doesn't need to send payload to backend since endpoint is ""
+        # Return minimal JSON for compatibility
         return {
             "filename": self.filename,
             "file_size": len(self.file_data)
         }
+    
     
     @classmethod
     def from_json_msg(cls, json_msg: Dict[str, Any]) -> "ImageUploadData":
