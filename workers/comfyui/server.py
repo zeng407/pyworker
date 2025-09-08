@@ -13,54 +13,126 @@ from lib.server import start_server
 from .data_types import DefaultComfyWorkflowData, CustomComfyWorkflowData
 import time
 import re
+import os
+import time
+from typing import Optional, Type, Union
 
-# /upload/image endpoint for uploading images to be used as input
-async def handle_upload_image(request):
-    reader = await request.multipart()
+from .data_types import ImageUploadData
+
+
+@dataclasses.dataclass  
+class ImageUploadHandler:
+    """
+    Custom handler for image upload that processes multipart form data
+    and saves uploaded images to the uploads directory.
     
-    filename = None
-    file_data = None
+    This handler follows the backend metrics pattern for workload tracking.
+    """
     
-    # Process all fields in the multipart request
-    async for field in reader:
-        if field.name == "file":
-            filename = field.filename
-            if not filename:
-                log.debug("No filename provided")
-                return web.json_response({"error": "No filename provided"}, status=400)
-            # Read all data from the file field
-            file_data = await field.read()
-        elif field.name == "name":
-            # Optional custom name
-            custom_name = (await field.text()).strip()
-            if custom_name:
-                filename = custom_name
+    backend: 'Backend' = None  # Will be injected when creating the handler
     
-    # Check if we received file data
-    if not file_data:
-        log.debug("No file data received")
-        return web.json_response({"error": "No file data received"}, status=400)
+    @property
+    def endpoint(self) -> str:
+        return ""  # No backend endpoint needed for file upload
     
-    if not filename:
-        log.debug("No filename provided")
-        return web.json_response({"error": "No filename provided"}, status=400)
-    
-    # Save to uploads directory
-    uploads_dir = os.path.abspath("uploads")
-    os.makedirs(uploads_dir, exist_ok=True)
-    save_path = os.path.join(uploads_dir, filename)
-    
-    # Write file data
-    with open(save_path, "wb") as f:
-        f.write(file_data)
-    
-    # Verify file was written correctly
-    if not os.path.exists(save_path) or os.path.getsize(save_path) == 0:
-        log.debug(f"Failed to save file: {save_path}")
-        return web.json_response({"error": "Failed to save file"}, status=500)
-    
-    log.debug(f"Successfully uploaded file: {save_path} (size: {os.path.getsize(save_path)} bytes)")
-    return web.json_response({"success": True, "filename": filename, "path": save_path})
+    async def handle_request(self, request):
+        """
+        Process multipart image upload request with metrics tracking
+        """
+        # Create a dummy auth_data since image upload doesn't require authentication
+        # but we need it for metrics tracking
+        from lib.data_types import AuthData
+        import asyncio
+        
+        auth_data = AuthData(
+            signature="", cost="0", endpoint=self.endpoint, 
+            reqnum=0, url=""
+        )
+        
+        reader = await request.multipart()
+        
+        filename = None
+        file_data = None
+        
+        # Process all fields in the multipart request
+        async for field in reader:
+            if field.name == "file":
+                filename = field.filename
+                if not filename:
+                    log.debug("No filename provided")
+                    return web.json_response({"error": "No filename provided"}, status=400)
+                # Read all data from the file field
+                file_data = await field.read()
+            elif field.name == "name":
+                # Optional custom name
+                custom_name = (await field.text()).strip()
+                if custom_name:
+                    filename = custom_name
+        
+        # Check if we received file data
+        if not file_data:
+            log.debug("No file data received")
+            return web.json_response({"error": "No file data received"}, status=400)
+        
+        if not filename:
+            log.debug("No filename provided")
+            return web.json_response({"error": "No filename provided"}, status=400)
+        
+        # Create ImageUploadData for logging/metrics
+        upload_data = ImageUploadData(filename=filename, file_data=file_data)
+        workload = upload_data.count_workload()
+        
+        # Handle client disconnection
+        async def cancel_if_disconnected():
+            await request.wait_for_disconnection()
+            log.debug(f"upload request with reqnum: {auth_data.reqnum} was canceled")
+            self.backend.metrics._request_canceled(workload=workload)
+            return web.Response(status=500)
+        
+        async def process_upload():
+            # Start metrics tracking
+            self.backend.metrics._request_start(workload=workload, reqnum=auth_data.reqnum)
+            
+            try:
+                # Save to uploads directory
+                uploads_dir = os.path.abspath("uploads")
+                os.makedirs(uploads_dir, exist_ok=True)
+                save_path = os.path.join(uploads_dir, filename)
+                
+                # Write file data
+                with open(save_path, "wb") as f:
+                    f.write(file_data)
+                
+                # Verify file was written correctly
+                if not os.path.exists(save_path) or os.path.getsize(save_path) == 0:
+                    log.debug(f"Failed to save file: {save_path}")
+                    self.backend.metrics._request_errored(workload=workload)
+                    return web.json_response({"error": "Failed to save file"}, status=500)
+                
+                log.debug(f"Successfully uploaded file: {save_path} (size: {os.path.getsize(save_path)} bytes)")
+                self.backend.metrics._request_success(workload=workload)
+                return web.json_response({"success": True, "filename": filename, "path": save_path})
+                
+            except Exception as e:
+                log.debug(f"Error during upload: {e}")
+                self.backend.metrics._request_errored(workload=workload)
+                return web.json_response({"error": str(e)}, status=500)
+            finally:
+                # End metrics tracking
+                self.backend.metrics._request_end(workload=workload, reqnum=auth_data.reqnum)
+        
+        # Race between upload processing and client disconnection
+        done, pending = await asyncio.wait(
+            [cancel_if_disconnected(), process_upload()],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        
+        # Cancel any remaining tasks
+        for task in pending:
+            task.cancel()
+            
+        # Return the result from the completed task
+        return await done.pop()
 
 
 MODEL_SERVER_URL = "http://0.0.0.0:38188"
@@ -254,7 +326,7 @@ routes = [
     web.post("/prompt", backend.create_handler(DefaultComfyWorkflowHandler())),
     web.post("/custom-workflow", backend.create_handler(CustomComfyWorkflowHandler())),
     web.get("/ping", handle_ping),
-    web.post("/upload/image", handle_upload_image),
+    web.post("/upload/image", ImageUploadHandler(backend=backend).handle_request),
     web.get("/task/{id}", handle_task_info),
     web.get("/download/{path:.*}", handle_download_output),
 ]
