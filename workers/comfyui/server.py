@@ -17,7 +17,7 @@ import os
 import time
 from typing import Optional, Type, Union
 
-from .data_types import ImageUploadData
+from .data_types import ImageUploadData, TaskInfoData
 
 
 @dataclasses.dataclass  
@@ -135,6 +135,103 @@ class ImageUploadHandler:
         return await done.pop()
 
 
+@dataclasses.dataclass
+class TaskInfoHandler(EndpointHandler[TaskInfoData]):
+    """
+    Handler for task info queries that follows the standard EndpointHandler pattern.
+    This handler queries ComfyUI backend for task status and results.
+    """
+    
+    task_id: str = ""  # Task ID parameter for endpoint formatting
+
+    @property
+    def endpoint(self) -> str:
+        return f"/result/{self.task_id}"  # ComfyUI backend endpoint with task_id
+
+    @property
+    def healthcheck_endpoint(self) -> Optional[str]:
+        return None
+
+    @classmethod
+    def payload_cls(cls) -> Type[TaskInfoData]:
+        return TaskInfoData
+
+    def make_benchmark_payload(self) -> TaskInfoData:
+        return TaskInfoData.for_test()
+
+    async def generate_client_response(
+        self, client_request: web.Request, model_response: ClientResponse
+    ) -> Union[web.Response, web.StreamResponse]:
+        return await generate_client_response(client_request, model_response)
+
+
+# Custom handler function that extracts task_id from URL and uses backend pattern
+async def handle_task_info_request(request):
+    """
+    Custom request handler that extracts task_id from URL path and 
+    uses the standard backend.create_handler pattern through TaskInfoHandler.
+    """
+    from lib.data_types import AuthData, JsonDataException
+    
+    # Extract task_id from URL
+    task_id = request.match_info.get('id')
+    if not task_id:
+        return web.json_response({'error': 'No task id provided'}, status=400)
+    
+    # Create mock JSON request data that matches what backend expects
+    mock_json_data = {
+        "auth_data": {
+            "signature": "",
+            "cost": "0", 
+            "endpoint": f"/task/{task_id}",
+            "reqnum": 1,
+            "url": ""
+        },
+        "payload": {
+            "task_id": task_id
+        }
+    }
+    
+    # Create a TaskInfoHandler with task_id parameter and process using backend pattern
+    handler = TaskInfoHandler(task_id=task_id)
+    
+    try:
+        # Parse request data using handler's standard method
+        auth_data, payload = handler.get_data_from_request(mock_json_data)
+        workload = payload.count_workload()
+        
+        # Use backend's metrics tracking
+        backend.metrics._request_start(workload=workload, reqnum=auth_data.reqnum)
+        
+        # Make request to ComfyUI backend - endpoint already includes task_id
+        comfyui_url = f"{MODEL_SERVER_URL}{handler.endpoint}"
+        log.debug(f"Proxying GET {handler.endpoint} to {comfyui_url}")
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(comfyui_url) as response:
+                # Use handler's response generation method
+                result = await handler.generate_client_response(request, response)
+                
+                # Track success/error
+                if response.status == 200:
+                    backend.metrics._request_success(workload=workload)
+                else:
+                    backend.metrics._request_errored(workload=workload)
+                
+                return result
+                
+    except JsonDataException as e:
+        return web.json_response(data=e.message, status=422)
+    except Exception as e:
+        log.error(f"Error handling task info request: {e}")
+        if 'workload' in locals():
+            backend.metrics._request_errored(workload=workload)
+        return web.json_response({'error': str(e)}, status=500)
+    finally:
+        if 'workload' in locals() and 'auth_data' in locals():
+            backend.metrics._request_end(workload=workload, reqnum=auth_data.reqnum)
+
+
 MODEL_SERVER_URL = "http://0.0.0.0:38188"
 
 # This is the last log line that gets emitted once comfyui+extensions have been fully loaded
@@ -250,21 +347,6 @@ backend = Backend(
 async def handle_ping(_):
     return web.Response(body="pong")
 
-async def handle_task_info(request):
-    request_id = request.match_info.get('id')
-    if not request_id:
-        return web.json_response({'error': 'No task id provided'}, status=400)
-    comfyui_url = f"{MODEL_SERVER_URL}/result/{request_id}"
-    log.debug(f"Proxying GET /result/{request_id} to {comfyui_url}")
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(comfyui_url) as resp:
-                # Use the same response handling logic as CustomComfyWorkflowHandler
-                return await generate_client_response(request, resp)
-    except Exception as e:
-        log.error(f"Error proxying to ComfyUI: {e}")
-        return web.json_response({'error': str(e)}, status=500)
-
 async def handle_download_output(request):
     # Get the path from the URL, e.g., /99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png
     path = request.match_info.get('path')
@@ -327,7 +409,7 @@ routes = [
     web.post("/custom-workflow", backend.create_handler(CustomComfyWorkflowHandler())),
     web.get("/ping", handle_ping),
     web.post("/upload/image", ImageUploadHandler(backend=backend).handle_request),
-    web.get("/task/{id}", handle_task_info),
+    web.get("/task/{id}", handle_task_info_request),
     web.get("/download/{path:.*}", handle_download_output),
 ]
 

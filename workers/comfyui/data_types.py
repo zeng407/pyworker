@@ -52,6 +52,38 @@ class ImageUploadData(ApiPayload):
         return cls(filename=json_msg["filename"], file_data=b"")
 
 
+@dataclasses.dataclass
+class TaskInfoData(ApiPayload):
+    task_id: str
+    
+    @classmethod
+    def for_test(cls) -> "TaskInfoData":
+        return cls(task_id="test-task-id-12345")
+    
+    def get_cost(self) -> int:
+        return 0  # Task info query should be free
+    
+    def get_word_count(self) -> int:
+        return 1  # Minimal word count for query operations
+    
+    def count_workload(self) -> float:
+        # Task info query is a very lightweight operation
+        return 0.1
+    
+    def generate_payload_json(self) -> Dict[str, Any]:
+        # For task info, we don't send JSON payload, task_id is in URL path
+        return {"task_id": self.task_id}
+    
+    @classmethod
+    def from_json_msg(cls, json_msg: Dict[str, Any]) -> "TaskInfoData":
+        errors = {}
+        if "task_id" not in json_msg:
+            errors["task_id"] = "missing parameter"
+        if errors:
+            raise JsonDataException(errors)
+        return cls(task_id=json_msg["task_id"])
+
+
 with open("workers/comfyui/misc/test_prompts.txt", "r") as f:
     test_prompts = f.readlines()
 
