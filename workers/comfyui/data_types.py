@@ -84,7 +84,7 @@ class TaskInfoData(ApiPayload):
         return cls(task_id=json_msg["task_id"])
 
 
-with open("workers/comfyui/misc/test_prompts.txt", "r") as f:
+with open("workers/comfyui/misc/test_prompts.txt", "r", encoding="utf-8") as f:
     test_prompts = f.readlines()
 
 
@@ -117,7 +117,7 @@ def get_model() -> Model:
 
 @cache
 def get_request_template() -> str:
-    with open(f"workers/comfyui/misc/default_workflows/{get_model().value}.json") as f:
+    with open(f"workers/comfyui/misc/default_workflows/{get_model().value}.json", encoding="utf-8") as f:
         return f.read()
 
 

@@ -283,7 +283,7 @@ def call_custom_workflow_with_images(
     )
 
     # Load workflow JSON
-    with open(workflow_path, "r") as f:
+    with open(workflow_path, "r", encoding="utf-8") as f:
         prompt_json = json.load(f)
 
     # Upload images to server and get their filenames
@@ -416,7 +416,7 @@ if __name__ == "__main__":
                 )
                 
                 # Save result to output file
-                with open(args.output_file, 'w') as f:
+                with open(args.output_file, 'w', encoding="utf-8") as f:
                     json.dump(res_json, f, indent=2)
                 
                 print(f"Workflow submitted successfully! Result saved to: {args.output_file}")
@@ -431,7 +431,7 @@ if __name__ == "__main__":
                 )
                 
                 # Save result to output file
-                with open(args.output_file, 'w') as f:
+                with open(args.output_file, 'w', encoding="utf-8") as f:
                     json.dump(res_json, f, indent=2)
                 
                 if args.output_json:
