@@ -288,12 +288,53 @@ def call_custom_workflow_with_images(
 
     # Upload images to server and get their filenames
     def upload_image(img_path):
+        print(f"[UPLOAD] Starting upload for image: {img_path}")
+
+        # Check if file exists and get file size
+        if not os.path.exists(img_path):
+            raise FileNotFoundError(f"[UPLOAD] Image file not found: {img_path}")
+
+        file_size = os.path.getsize(img_path)
+        print(f"[UPLOAD] File size: {file_size} bytes")
+
         upload_url = urljoin(url, "/upload/image")
-        with open(img_path, "rb") as f:
-            files = {"file": (Path(img_path).name, f)}
-            resp = requests.post(upload_url, files=files, verify=get_cert_file_path())
-            resp.raise_for_status()
-            return resp.json()["path"]
+        print(f"[UPLOAD] Upload URL: {upload_url}")
+
+        try:
+            with open(img_path, "rb") as f:
+                files = {"file": (Path(img_path).name, f)}
+                print(f"[UPLOAD] Sending POST request with file: {Path(img_path).name}")
+
+                resp = requests.post(upload_url, files=files, verify=get_cert_file_path(), timeout=30)
+                print(f"[UPLOAD] Response status code: {resp.status_code}")
+                print(f"[UPLOAD] Response headers: {dict(resp.headers)}")
+
+                if resp.status_code != 200:
+                    print(f"[UPLOAD] Error response content: {resp.text}")
+                    resp.raise_for_status()
+
+                try:
+                    response_json = resp.json()
+                    print(f"[UPLOAD] Response JSON: {response_json}")
+
+                    if "path" not in response_json:
+                        raise ValueError(f"[UPLOAD] Server response missing 'path' field: {response_json}")
+
+                    uploaded_path = response_json["path"]
+                    print(f"[UPLOAD] Successfully uploaded image, server path: {uploaded_path}")
+                    return uploaded_path
+
+                except json.JSONDecodeError as e:
+                    print(f"[UPLOAD] Failed to parse JSON response: {e}")
+                    print(f"[UPLOAD] Raw response content: {resp.text}")
+                    raise
+
+        except requests.exceptions.RequestException as e:
+            print(f"[UPLOAD] Network error during upload: {e}")
+            raise
+        except Exception as e:
+            print(f"[UPLOAD] Unexpected error during upload: {e}")
+            raise
 
     user_img_filename = upload_image(user_img)
     
