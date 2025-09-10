@@ -80,6 +80,7 @@ def call_custom_workflow_with_images(
     )
     response.raise_for_status()
     message = response.json()
+    print(f"Route response: {message}")
     url = message["url"]
     auth_data = dict(
         signature=message["signature"],
@@ -185,8 +186,7 @@ def call_custom_workflow_with_images(
     )
     response.raise_for_status()
     res_json = response.json()
-    # print_truncate_res(str(res_json))
-    # save_images(res_json)
+    print(res_json)
     return res_json
 
 
@@ -210,34 +210,8 @@ if __name__ == "__main__":
     submit_parser.add_argument("--prefix", dest="prefix", type=str, required=True, help="Filename prefix for generated images")
     submit_parser.add_argument("--output", dest="output_file", type=str, required=True, help="Output file to save the submit result (JSON format)")
     
-    # Query task status command
-    query_parser = subparsers.add_parser("query", help="Query task status")
-    query_parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID to query")
-    query_parser.add_argument("--json", dest="output_json", action="store_true", help="Output file paths as JSON for piping to other commands")
-    query_parser.add_argument("--output", dest="output_file", type=str, required=True, help="Output file to save the query result (JSON format)")
-    
-    # Download file command
-    download_parser = subparsers.add_parser("download", help="Download a file from ComfyUI output")
-    download_parser.add_argument("--path", dest="file_path", type=str, required=True, help="File path relative to ComfyUI output directory (e.g., 99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png)")
-    download_parser.add_argument("--output", dest="output_dir", type=str, default="downloads", help="Output directory for downloaded files (default: downloads)")
-    
-    # Download all files from a task command
-    download_all_parser = subparsers.add_parser("download-all", help="Query task status and download all output files")
-    download_all_parser.add_argument("--task_id", dest="task_id", type=str, required=True, help="Task ID to query and download files from")
-    download_all_parser.add_argument("--output", dest="output_dir", type=str, default="downloads", help="Output directory for downloaded files (default: downloads)")
-    
-    # Download from JSON input (for piping)
-    download_json_parser = subparsers.add_parser("download-from-json", help="Download files from JSON input (for piping)")
-    download_json_parser.add_argument("--json", dest="json_input", type=str, help="JSON string with file paths (if not provided, reads from stdin)")
-    download_json_parser.add_argument("--output", dest="output_dir", type=str, default="downloads", help="Output directory for downloaded files (default: downloads)")
-
     # python3 -m workers.comfyui.client -k ... -e ... submit --workflow ... --user_img ... --style style_eu1 --room living_room --prefix ... --output submit_result.json
-    # python3 -m workers.comfyui.client -k ... -e ... query --task_id ... --output query_result.json
-    # python3 -m workers.comfyui.client -k ... -e ... download --path 99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png
-    # python3 -m workers.comfyui.client -k ... -e ... download-all --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75
-    # 
-    # Pipeline examples:
-    # python3 -m workers.comfyui.client -k ... -e ... query --task_id 99533104-3947-47b6-8f2c-d41a35b5ed75 --output query_result.json --json | python3 -m workers.comfyui.client -k ... -e ... download-from-json
+
     args = parser.parse_args()
     
     if not args.command:
