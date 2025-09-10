@@ -45,8 +45,8 @@ class ImageUploadHandler:
         import asyncio
         
         auth_data = AuthData(
-            signature="", cost="0", endpoint=self.endpoint, 
-            reqnum=0, url=""
+            signature="", cost="100", endpoint=self.endpoint, 
+            reqnum=1, url=""
         )
         
         reader = await request.multipart()
@@ -343,10 +343,6 @@ backend = Backend(
     ],
 )
 
-
-async def handle_ping(_):
-    return web.Response(body="pong")
-
 async def handle_download_output(request):
     # Get the path from the URL, e.g., /99533104-3947-47b6-8f2c-d41a35b5ed75/TASK_ID_1_00004_.png
     path = request.match_info.get('path')
@@ -407,10 +403,7 @@ async def handle_download_output(request):
 routes = [
     web.post("/prompt", backend.create_handler(DefaultComfyWorkflowHandler())),
     web.post("/custom-workflow", backend.create_handler(CustomComfyWorkflowHandler())),
-    web.get("/ping", handle_ping),
     web.post("/upload/image", ImageUploadHandler(backend=backend).handle_request),
-    web.get("/task/{id}", handle_task_info_request),
-    web.get("/download/{path:.*}", handle_download_output),
 ]
 
 if __name__ == "__main__":
