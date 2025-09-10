@@ -17,7 +17,7 @@ import os
 import time
 from typing import Optional, Type, Union
 
-from .data_types import ImageUploadData, TaskInfoData
+from .data_types import ImageUploadData
 
 
 @dataclasses.dataclass  
@@ -134,35 +134,6 @@ class ImageUploadHandler:
         # Return the result from the completed task
         return await done.pop()
 
-
-@dataclasses.dataclass
-class TaskInfoHandler(EndpointHandler[TaskInfoData]):
-    """
-    Handler for task info queries that follows the standard EndpointHandler pattern.
-    This handler queries ComfyUI backend for task status and results.
-    """
-    
-    task_id: str = ""  # Task ID parameter for endpoint formatting
-
-    @property
-    def endpoint(self) -> str:
-        return f"/result/{self.task_id}"  # ComfyUI backend endpoint with task_id
-
-    @property
-    def healthcheck_endpoint(self) -> Optional[str]:
-        return None
-
-    @classmethod
-    def payload_cls(cls) -> Type[TaskInfoData]:
-        return TaskInfoData
-
-    def make_benchmark_payload(self) -> TaskInfoData:
-        return TaskInfoData.for_test()
-
-    async def generate_client_response(
-        self, client_request: web.Request, model_response: ClientResponse
-    ) -> Union[web.Response, web.StreamResponse]:
-        return await generate_client_response(client_request, model_response)
 
 
 # Custom handler function that extracts task_id from URL and uses backend pattern
