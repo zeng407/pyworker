@@ -185,7 +185,7 @@ class DefaultComfyWorkflowHandler(EndpointHandler[DefaultComfyWorkflowData]):
 
     @property
     def endpoint(self) -> str:
-        return "/runsync"
+        return "/payload"
 
     @property
     def healthcheck_endpoint(self) -> Optional[str]:
