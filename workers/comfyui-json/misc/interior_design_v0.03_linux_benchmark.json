@@ -1,0 +1,693 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 607318702721105,
+      "steps": 30,
+      "cfg": 7,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": [
+        "25",
+        0
+      ],
+      "positive": [
+        "20",
+        0
+      ],
+      "negative": [
+        "20",
+        1
+      ],
+      "latent_image": [
+        "35",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "4": {
+    "inputs": {
+      "ckpt_name": "xsarchitectural_v11.ckpt"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（简易）"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "(Scandinavian-inspired minimalist interior with clean lines, light wood accents, geometric forms, and practical furnishings:1.1),\n(Soft neutral palette with pops of bright, cheerful color to create warmth and contrast in a cold climate:1.0),\n(Emphasis on simplicity, functionality, and airy open spaces, with natural materials and understated decor:1.0),\n(A small but charming balcony with a view:1.3),\n(Featuring outdoor furniture such as small table with chairs or a bench, potted plants, railing decorations:1.3),\n(Simple and inviting layout:1.2),\n(Clear floor space for movement:1.1)\n",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "(cartoon:1.2), (anime:1.2), (painting:1.2), (3D render:1.2), (CGI:1.2),\n(digital art:1.2), (illustration:1.2), (blurry:1.3), (noisy:1.2),\n(low quality:1.3), (lowres:1.3), (deformed:1.3), (disfigured:1.3),\n(unrealistic:1.2), (surreal:1.1), (fantasy elements:1.1), (distorted:1.2),\n(exaggerated proportions:1.2), (sketch:1.1), (airbrushed:1.1),\n(overexposed:1.1), (underexposed:1.1), (overly artistic:1.0),\n(HDR:1.0), (sci-fi:1.0), (futuristic:1.0), (game style:1.0),\n(virtual reality:1.0), (noisy textures:1.1), (artifacts:1.1),\n(window:1.0), (floor-to-ceiling window:1.0), (glass panel:1.0),\n(outdoor view:1.0), (reflections:1.0), (transparent surfaces:1.0),\n(curtain wall:1.0), (large window:1.0),\n(glass facade:1.0), (full-height glazing:1.0), (glazed opening:1.0),\n(sofa:1.1), (TV:1.1), (dining table:1.1), (bed:1.1),\n(wardrobe:1.1), (bathtub:1.1), (stove:1.1), (refrigerator:1.1),\n(study desk:1.1)\n",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "13": {
+    "inputs": {
+      "pixels": [
+        "15",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "14": {
+    "inputs": {
+      "image": "https://images.free3d.com/imgd/l73389-a-simple-room-56905.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "15": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 1024,
+      "height": 0,
+      "crop": "disabled",
+      "image": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放图像"
+    }
+  },
+  "16": {
+    "inputs": {
+      "strength": 0.7500000000000001,
+      "start_percent": 0,
+      "end_percent": 0.8000000000000002,
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "control_net": [
+        "17",
+        0
+      ],
+      "image": [
+        "18",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "应用ControlNet（旧版高级）"
+    }
+  },
+  "17": {
+    "inputs": {
+      "control_net_name": "1.5/control_v11p_sd15_canny_fp16.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "加载ControlNet模型"
+    }
+  },
+  "18": {
+    "inputs": {
+      "score_threshold": 0.30000000000000004,
+      "dist_threshold": 0.18000000000000005,
+      "resolution": 512,
+      "image": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "M-LSDPreprocessor",
+    "_meta": {
+      "title": "M-LSD Lines"
+    }
+  },
+  "19": {
+    "inputs": {
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "20": {
+    "inputs": {
+      "strength": 0.45000000000000007,
+      "start_percent": 0,
+      "end_percent": 0.8000000000000002,
+      "positive": [
+        "16",
+        0
+      ],
+      "negative": [
+        "16",
+        1
+      ],
+      "control_net": [
+        "21",
+        0
+      ],
+      "image": [
+        "22",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "应用ControlNet（旧版高级）"
+    }
+  },
+  "21": {
+    "inputs": {
+      "control_net_name": "1.5/control_v11f1p_sd15_depth_fp16.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "加载ControlNet模型"
+    }
+  },
+  "22": {
+    "inputs": {
+      "resolution": 512,
+      "image": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "Zoe-DepthMapPreprocessor",
+    "_meta": {
+      "title": "Zoe Depth Map"
+    }
+  },
+  "23": {
+    "inputs": {
+      "images": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "24": {
+    "inputs": {
+      "images": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "25": {
+    "inputs": {
+      "weight": 0.30000000000000004,
+      "weight_type": "linear",
+      "combine_embeds": "concat",
+      "start_at": 0,
+      "end_at": 1,
+      "embeds_scaling": "V only",
+      "model": [
+        "28",
+        0
+      ],
+      "ipadapter": [
+        "28",
+        1
+      ],
+      "image": [
+        "30",
+        0
+      ]
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": {
+      "title": "IPAdapter Advanced"
+    }
+  },
+  "28": {
+    "inputs": {
+      "preset": "STANDARD (medium strength)",
+      "model": [
+        "29",
+        0
+      ]
+    },
+    "class_type": "IPAdapterUnifiedLoader",
+    "_meta": {
+      "title": "IPAdapter Unified Loader"
+    }
+  },
+  "29": {
+    "inputs": {
+      "lora_name": "xsarchitectural-7.safetensors",
+      "strength_model": 1.0000000000000002,
+      "strength_clip": 1.0000000000000002,
+      "model": [
+        "4",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "加载LoRA"
+    }
+  },
+  "30": {
+    "inputs": {
+      "interpolation": "LANCZOS",
+      "crop_position": "top",
+      "sharpening": 0,
+      "image": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "PrepImageForClipVision",
+    "_meta": {
+      "title": "Prep Image For ClipVision"
+    }
+  },
+  "31": {
+    "inputs": {
+      "image": "https://progressivedesignbuild.com/wp-content/uploads/2024/08/AdobeStock_886778504-f.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "32": {
+    "inputs": {},
+    "class_type": "Anything Everywhere",
+    "_meta": {
+      "title": "Anything Everywhere"
+    }
+  },
+  "35": {
+    "inputs": {
+      "amount": 4,
+      "samples": [
+        "40",
+        0
+      ]
+    },
+    "class_type": "RepeatLatentBatch",
+    "_meta": {
+      "title": "复制Latent批次"
+    }
+  },
+  "36": {
+    "inputs": {
+      "prompt": "window",
+      "threshold": 0.45000000000000007,
+      "sam_model": [
+        "37",
+        0
+      ],
+      "grounding_dino_model": [
+        "38",
+        0
+      ],
+      "image": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "GroundingDinoSAM2Segment (segment anything2)",
+    "_meta": {
+      "title": "GroundingDinoSAM2Segment (segment anything2)"
+    }
+  },
+  "37": {
+    "inputs": {
+      "model_name": "sam2_1_hiera_large.pt"
+    },
+    "class_type": "SAM2ModelLoader (segment anything2)",
+    "_meta": {
+      "title": "SAM2ModelLoader (segment anything2)"
+    }
+  },
+  "38": {
+    "inputs": {
+      "model_name": "GroundingDINO_SwinT_OGC (694MB)"
+    },
+    "class_type": "GroundingDinoModelLoader (segment anything2)",
+    "_meta": {
+      "title": "GroundingDinoModelLoader (segment anything2)"
+    }
+  },
+  "39": {
+    "inputs": {
+      "images": [
+        "36",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "40": {
+    "inputs": {
+      "grow_mask_by": 6,
+      "pixels": [
+        "15",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ],
+      "mask": [
+        "41",
+        0
+      ]
+    },
+    "class_type": "VAEEncodeForInpaint",
+    "_meta": {
+      "title": "VAE编码（局部重绘）"
+    }
+  },
+  "41": {
+    "inputs": {
+      "mask": [
+        "36",
+        1
+      ]
+    },
+    "class_type": "InvertMask",
+    "_meta": {
+      "title": "反转遮罩"
+    }
+  },
+  "42": {
+    "inputs": {
+      "seed": 93892049668397,
+      "steps": 20,
+      "cfg": 8,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": [
+        "25",
+        0
+      ],
+      "positive": [
+        "51",
+        0
+      ],
+      "negative": [
+        "51",
+        1
+      ],
+      "latent_image": [
+        "43",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "43": {
+    "inputs": {
+      "grow_mask_by": 6,
+      "pixels": [
+        "8",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ],
+      "mask": [
+        "36",
+        1
+      ]
+    },
+    "class_type": "VAEEncodeForInpaint",
+    "_meta": {
+      "title": "VAE编码（局部重绘）"
+    }
+  },
+  "44": {
+    "inputs": {
+      "text": "large modern window, transparent glass, aluminum frame, sunlight coming through, no curtains",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "46": {
+    "inputs": {
+      "strength": 0.7500000000000001,
+      "start_percent": 0,
+      "end_percent": 0.8000000000000002,
+      "positive": [
+        "44",
+        0
+      ],
+      "negative": [
+        "47",
+        0
+      ],
+      "control_net": [
+        "17",
+        0
+      ],
+      "image": [
+        "18",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "应用ControlNet（旧版高级）"
+    }
+  },
+  "47": {
+    "inputs": {
+      "text": "cartoon, anime, painting, 3D render, CGI, digital art, illustration, blurry, noisy, low quality, lowres, deformed, disfigured, unrealistic, surreal, fantasy elements, low quality, blurry, distorted, exaggerated proportions, surreal, fantasy, cartoon, sketch, 3D render, airbrushed, overexposed, underexposed, overly artistic, HDR, sci-fi, futuristic, game style, virtual reality, noisy textures, artifacts, cartoon, anime, painting, 3D render, CGI, digital art, illustration, blurry, noisy, low quality, lowres, deformed, disfigured, unrealistic, surreal, fantasy elements, distorted, exaggerated proportions, sketch, airbrushed, overexposed, underexposed, overly artistic, HDR, sci-fi, futuristic, game style, virtual reality, noisy textures, artifacts, tv, television, cabinet, shelf, drawer, closet, bookcase, refrigerator, wardrobe, picture frame, mirror, curtain, curtain rod, blind, blinds, curtain box, furniture",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "48": {
+    "inputs": {
+      "samples": [
+        "42",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "49": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "56",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "51": {
+    "inputs": {
+      "strength": 0.45000000000000007,
+      "start_percent": 0,
+      "end_percent": 0.8000000000000002,
+      "positive": [
+        "46",
+        0
+      ],
+      "negative": [
+        "46",
+        1
+      ],
+      "control_net": [
+        "21",
+        0
+      ],
+      "image": [
+        "22",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "应用ControlNet（旧版高级）"
+    }
+  },
+  "52": {
+    "inputs": {
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "53": {
+    "inputs": {
+      "mask": [
+        "36",
+        1
+      ]
+    },
+    "class_type": "IsMaskEmpty",
+    "_meta": {
+      "title": "Is Mask Empty"
+    }
+  },
+  "56": {
+    "inputs": {
+      "boolean": [
+        "58",
+        0
+      ],
+      "on_true": [
+        "8",
+        0
+      ],
+      "on_false": [
+        "48",
+        0
+      ]
+    },
+    "class_type": "easy ifElse",
+    "_meta": {
+      "title": "是否判断"
+    }
+  },
+  "58": {
+    "inputs": {
+      "comparison": "a == b",
+      "a": [
+        "53",
+        0
+      ],
+      "b": [
+        "61",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "61": {
+    "inputs": {
+      "value": true
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "布尔值"
+    }
+  }
+}

@@ -7,6 +7,7 @@ from functools import cache
 from math import ceil
 
 from lib.data_types import ApiPayload, JsonDataException
+import json
 
 
 @dataclasses.dataclass
@@ -57,6 +58,16 @@ def count_workload() -> float:
     # Results will indicate % or a job completed per second.  Avoids sub 0.1 sec performance indication
     return 100.0
 
+
+
+BENCHMARK_WORKFLOW_PATH = os.path.join(
+    os.path.dirname(__file__), "misc", "interior_design_v0.03_linux_benchmark.json"
+)
+
+def load_benchmark_workflow():
+    with open(BENCHMARK_WORKFLOW_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
 @dataclasses.dataclass
 class ComfyWorkflowData(ApiPayload):
     input: dict
@@ -67,18 +78,11 @@ class ComfyWorkflowData(ApiPayload):
         Use the variables available to simulate workflows of the required running time
         Example: SD1.5, simple image gen 10000 steps, 512px x 512px will run for approximately 9 minutes @ ~18 it/s (RTX 4090)
         """
-        test_prompt = random.choice(test_prompts).rstrip()
+        workflow_json = load_benchmark_workflow()
         return cls(
             input={
                 "request_id": f"test-{random.randint(1000, 99999)}",
-                "modifier": "Text2Image",
-                "modifications": {
-                    "prompt": test_prompt,
-                    "width": os.getenv('BENCHMARK_TEST_WIDTH', 512),
-                    "height": os.getenv('BENCHMARK_TEST_HEIGHT', 512),
-                    "steps": os.getenv('BENCHMARK_TEST_STEPS', 20),
-                    "seed": random.randint(0, sys.maxsize),
-                }
+                "workflow_json": workflow_json
             }
         )
 
