@@ -13,7 +13,7 @@ from .data_types import ComfyWorkflowData
 from .data_types import ImageUploadData
 
 
-MODEL_SERVER_URL = os.getenv("MODEL_SERVER_URL", "http://127.0.0.1:38188")
+MODEL_SERVER_URL = os.getenv("MODEL_SERVER_URL", "http://0.0.0.0:38188")
 
 # This is the last log line that gets emitted once comfyui+extensions have been fully loaded
 MODEL_SERVER_START_LOG_MSG = "To see the GUI go to: "
