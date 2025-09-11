@@ -9,6 +9,46 @@ from math import ceil
 from lib.data_types import ApiPayload, JsonDataException
 
 
+@dataclasses.dataclass
+class ImageUploadData(ApiPayload):
+    filename: str
+    file_data: bytes = dataclasses.field(repr=False)  # Don't show file data in repr
+    
+    @classmethod
+    def for_test(cls) -> "ImageUploadData":
+        return cls(filename="test_image.png", file_data=b"fake_image_data")
+    
+    def get_cost(self) -> int:
+        return 0  # Image upload should be free
+    
+    def get_word_count(self) -> int:
+        return 1  # Minimal word count for upload operations
+    
+    def count_workload(self) -> float:
+        # Image upload is a lightweight operation, use minimal workload
+        # Approximately equivalent to a very small image generation request
+        return 10.0
+    
+    def generate_payload_json(self) -> Dict[str, Any]:
+        # Image upload doesn't need to send payload to backend since endpoint is ""
+        # Return minimal JSON for compatibility
+        return {
+            "filename": self.filename,
+            "file_size": len(self.file_data)
+        }
+    
+    
+    @classmethod
+    def from_json_msg(cls, json_msg: Dict[str, Any]) -> "ImageUploadData":
+        # This won't be used for multipart uploads, but required by base class
+        errors = {}
+        if "filename" not in json_msg:
+            errors["filename"] = "missing parameter"
+        if errors:
+            raise JsonDataException(errors)
+        return cls(filename=json_msg["filename"], file_data=b"")
+
+
 with open("workers/comfyui/misc/test_prompts.txt", "r") as f:
     test_prompts = f.readlines()
 
