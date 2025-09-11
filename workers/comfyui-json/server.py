@@ -93,8 +93,9 @@ class ImageUploadHandler:
     This handler follows the backend metrics pattern for workload tracking.
     """
     
-    backend: 'Backend' = None  # Will be injected when creating the handler
-    
+    def __init__(self, backend):
+        self.backend = backend
+            
     @property
     def endpoint(self) -> str:
         return ""  # No backend endpoint needed for file upload

@@ -6,6 +6,7 @@ import json
 import os
 
 import requests
+import argparse
 
 from lib.test_utils import print_truncate_res
 from utils.endpoint_util import Endpoint
@@ -138,7 +139,7 @@ def call_custom_workflow_with_images(
 ) -> dict:
     """Custom workflow with image uploads and prompt building"""
 
-    WORKER_ENDPOINT = "/custom-workflow"
+    WORKER_ENDPOINT = "/generate/sync"
 
 
     # This worker has concurrency = 1.  All workloads have cost value 1.0
@@ -307,7 +308,32 @@ def call_text2image_workflow(
 if __name__ == "__main__":
     from lib.test_utils import test_args
 
-    args = test_args.parse_args()
+    parser = argparse.ArgumentParser(description="ComfyUI client with image upload and workflow override")
+    parser.add_argument("-k", dest="api_key", type=str, required=True, help="Your vast account API key")
+    parser.add_argument("-e", dest="endpoint_group_name", type=str, required=True, help="Endpoint group name")
+    parser.add_argument("-l", dest="server_url", type=str, default="https://run.vast.ai", help="Server URL")
+    parser.add_argument("-i", dest="instance", type=str, default="prod", help="Autoscaler shard, default: prod")
+    
+    # Subcommands
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # Submit workflow command
+    submit_parser = subparsers.add_parser("submit", help="Submit a workflow")
+    submit_parser.add_argument("--workflow", dest="workflow_path", type=str, required=True, help="Path to workflow JSON")
+    submit_parser.add_argument("--user_img", dest="user_img", type=str, required=True, help="Path to user input image")
+    submit_parser.add_argument("--style", dest="style", type=str, required=True, help="Style (style_eu1, style_jp1, style_country) or numeric ID (0, 1, 2)")
+    submit_parser.add_argument("--room", dest="room", type=str, required=True, choices=list(room_prompt.keys()), help="Room type (living_room, dining_room, ...)")
+    submit_parser.add_argument("--prefix", dest="prefix", type=str, required=True, help="Filename prefix for generated images")
+    submit_parser.add_argument("--output", dest="output_file", type=str, required=True, help="Output file to save the submit result (JSON format)")
+    
+    # python3 -m workers.comfyui.client -k ... -e ... submit --workflow ... --user_img ... --style style_eu1 --room living_room --prefix ... --output submit_result.json
+
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        exit(1)
+    
     endpoint_api_key = Endpoint.get_endpoint_api_key(
         endpoint_name=args.endpoint_group_name,
         account_api_key=args.api_key,
@@ -315,14 +341,27 @@ if __name__ == "__main__":
     )
 
     if endpoint_api_key:
-        result = call_text2image_workflow(
-            api_key=endpoint_api_key,
-            endpoint_group_name=args.endpoint_group_name,
-            server_url=args.server_url,
-        )
-        if result is None:
-            log.error("Text2Image workflow failed")
-        else:   
-            print(result)
+        try:
+            if args.command == "submit":
+                res_json = call_custom_workflow_with_images(
+                    endpoint_group_name=args.endpoint_group_name,
+                    api_key=endpoint_api_key,
+                    server_url=args.server_url,
+                    workflow_path=args.workflow_path,
+                    user_img=args.user_img,
+                    style=args.style,
+                    room=args.room,
+                    prefix=args.prefix,
+                )
+                
+                # Save result to output file
+                with open(args.output_file, 'w', encoding="utf-8") as f:
+                    json.dump(res_json, f, indent=2)
+                
+                print(f"Workflow submitted successfully! Result saved to: {args.output_file}")
+                print(f"Task ID: {res_json.get('id', 'N/A')}")
+                print(res_json)
+        except Exception as e:
+            log.error(f"Error during API call: {e}")
     else:
         log.error(f"Failed to get API key for endpoint {args.endpoint_group_name}")
