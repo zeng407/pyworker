@@ -12,7 +12,7 @@ from lib.test_utils import print_truncate_res
 from utils.endpoint_util import Endpoint
 from utils.ssl import get_cert_file_path
 from .data_types import count_workload
-from workers.comfyui.prompt_config import styles, room_prompt, common_negative_prompts, style_id_mapping
+from .prompt_config import styles, room_prompt, common_negative_prompts, style_id_mapping
 from pathlib import Path
 
 logging.basicConfig(
@@ -75,58 +75,6 @@ def resolve_style_name(style_input):
     # If no mapping found, raise an error
     raise ValueError(f"Invalid style: {style_input}. Valid options: {list(styles.keys())} or numbers 0-2")
 
-
-# Upload images to server and get their filenames
-def upload_image(img_path):
-    print(f"[UPLOAD] Starting upload for image: {img_path}")
-
-    # Check if file exists and get file size
-    if not os.path.exists(img_path):
-        raise FileNotFoundError(f"[UPLOAD] Image file not found: {img_path}")
-
-    file_size = os.path.getsize(img_path)
-    print(f"[UPLOAD] File size: {file_size} bytes")
-
-    upload_url = urljoin(url, "/upload/image")
-    print(f"[UPLOAD] Upload URL: {upload_url}")
-
-    try:
-        with open(img_path, "rb") as f:
-            files = {"file": (Path(img_path).name, f)}
-            print(f"[UPLOAD] Sending POST request with file: {Path(img_path).name}")
-
-            resp = requests.post(upload_url, files=files, verify=get_cert_file_path(), timeout=30)
-            print(f"[UPLOAD] Response status code: {resp.status_code}")
-            print(f"[UPLOAD] Response headers: {dict(resp.headers)}")
-
-            if resp.status_code != 200:
-                print(f"[UPLOAD] Error response content: {resp.text}")
-                resp.raise_for_status()
-
-            try:
-                response_json = resp.json()
-                print(f"[UPLOAD] Response JSON: {response_json}")
-
-                if "path" not in response_json:
-                    raise ValueError(f"[UPLOAD] Server response missing 'path' field: {response_json}")
-
-                uploaded_path = response_json["path"]
-                print(f"[UPLOAD] Successfully uploaded image, server path: {uploaded_path}")
-                return uploaded_path
-
-            except json.JSONDecodeError as e:
-                print(f"[UPLOAD] Failed to parse JSON response: {e}")
-                print(f"[UPLOAD] Raw response content: {resp.text}")
-                raise
-
-    except requests.exceptions.RequestException as e:
-        print(f"[UPLOAD] Network error during upload: {e}")
-        raise
-    except Exception as e:
-        print(f"[UPLOAD] Unexpected error during upload: {e}")
-        raise
-
-
 def call_custom_workflow_with_images(
     endpoint_group_name: str,
     api_key: str,
@@ -186,11 +134,63 @@ def call_custom_workflow_with_images(
     with open(workflow_path, "r", encoding="utf-8") as f:
         prompt_json = json.load(f)
 
+
+    # Upload images to server and get their filenames
+    def upload_image(img_path):
+        print(f"[UPLOAD] Starting upload for image: {img_path}")
+
+        # Check if file exists and get file size
+        if not os.path.exists(img_path):
+            raise FileNotFoundError(f"[UPLOAD] Image file not found: {img_path}")
+
+        file_size = os.path.getsize(img_path)
+        print(f"[UPLOAD] File size: {file_size} bytes")
+
+        upload_url = urljoin(url, "/upload/image")
+        print(f"[UPLOAD] Upload URL: {upload_url}")
+
+        try:
+            with open(img_path, "rb") as f:
+                files = {"file": (Path(img_path).name, f)}
+                print(f"[UPLOAD] Sending POST request with file: {Path(img_path).name}")
+
+                resp = requests.post(upload_url, files=files, verify=get_cert_file_path(), timeout=30)
+                print(f"[UPLOAD] Response status code: {resp.status_code}")
+                print(f"[UPLOAD] Response headers: {dict(resp.headers)}")
+
+                if resp.status_code != 200:
+                    print(f"[UPLOAD] Error response content: {resp.text}")
+                    resp.raise_for_status()
+
+                try:
+                    response_json = resp.json()
+                    print(f"[UPLOAD] Response JSON: {response_json}")
+
+                    if "path" not in response_json:
+                        raise ValueError(f"[UPLOAD] Server response missing 'path' field: {response_json}")
+
+                    uploaded_path = response_json["path"]
+                    print(f"[UPLOAD] Successfully uploaded image, server path: {uploaded_path}")
+                    return uploaded_path
+
+                except json.JSONDecodeError as e:
+                    print(f"[UPLOAD] Failed to parse JSON response: {e}")
+                    print(f"[UPLOAD] Raw response content: {resp.text}")
+                    raise
+
+        except requests.exceptions.RequestException as e:
+            print(f"[UPLOAD] Network error during upload: {e}")
+            raise
+        except Exception as e:
+            print(f"[UPLOAD] Unexpected error during upload: {e}")
+            raise
+
+
     user_img_filename = upload_image(user_img)
     
     # Resolve style name from input (handle numeric style_id)
     resolved_style = resolve_style_name(style)
-    style_img_path = styles[resolved_style]["img"]
+    style_img_path = os.path.join("/workspace/vast-pyworker", styles[resolved_style]["img"])
     style_img_filename = style_img_path
 
     prompt_json["14"]["inputs"]["image"] = user_img_filename
@@ -207,11 +207,12 @@ def call_custom_workflow_with_images(
     prompt_json["49"]["inputs"]["filename_prefix"] = prefix
 
     # Build the payload for the worker request
+    taskId = str(uuid.uuid4())
     worker_payload = {
         "input": {
-            "request_id": str(uuid.uuid4()),
-            "workflow_json": {}
-        }
+            "request_id": taskId,
+            "workflow_json": prompt_json
+        },
     }
     req_data = dict(payload=worker_payload, auth_data=auth_data)
     worker_url = urljoin(url, WORKER_ENDPOINT)

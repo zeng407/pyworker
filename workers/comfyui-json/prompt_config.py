@@ -12,7 +12,7 @@ style_id_mapping = {
 
 styles = {
     "style_eu1": {
-        "img": "workers/comfyui/misc/style_eu1.jpg",
+        "img": "workers/comfyui-json/misc/style_eu1.jpg",
         "prompts": [
             ("Scandinavian-inspired minimalist interior with clean lines, light wood accents, geometric forms, and practical furnishings", 1.1),
             ("Soft neutral palette with pops of bright, cheerful color to create warmth and contrast in a cold climate", 1.0),
@@ -20,7 +20,7 @@ styles = {
         ],
     },
     "style_jp1": {
-        "img": "workers/comfyui/misc/style_jp1.png",
+        "img": "workers/comfyui-json/misc/style_jp1.png",
         "prompts": [
             ("Traditional Japanese interior with warm dark wood tones, natural materials, clean symmetry and quiet order, inspired by wabi-sabi aesthetics", 1.1),
             ("Shoji paper doors, wooden lattice screens, tatami mats, minimal furnishings", 1.0),
@@ -28,7 +28,7 @@ styles = {
         ],
     },
     "style_country": {
-        "img": "workers/comfyui/misc/style_country.jpg",
+        "img": "workers/comfyui-json/misc/style_country.jpg",
         "prompts": [
             ("Vintage English country house style, with aged wooden furniture, floral and botanical patterns, natural materials, warm and nostalgic atmosphere", 1.1),
             ("Exposed wooden beams, plaster walls, terracotta or stone flooring", 1.0),
