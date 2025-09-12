@@ -50,7 +50,7 @@ class ImageUploadData(ApiPayload):
         return cls(filename=json_msg["filename"], file_data=b"")
 
 
-with open("workers/comfyui/misc/test_prompts.txt", "r") as f:
+with open("workers/comfyui/misc/test_prompts.txt", "r", encoding="utf-8") as f:
     test_prompts = f.readlines()
 
 def count_workload() -> float:
