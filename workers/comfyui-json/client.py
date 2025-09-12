@@ -4,6 +4,7 @@ import random
 from urllib.parse import urljoin
 import json
 import os
+import posixpath as path
 
 import requests
 import argparse
@@ -190,7 +191,7 @@ def call_custom_workflow_with_images(
     
     # Resolve style name from input (handle numeric style_id)
     resolved_style = resolve_style_name(style)
-    style_img_path = os.path.join("/workspace/vast-pyworker", styles[resolved_style]["img"])
+    style_img_path = path.join("/workspace/vast-pyworker", styles[resolved_style]["img"])
     style_img_filename = style_img_path
 
     prompt_json["14"]["inputs"]["image"] = user_img_filename
