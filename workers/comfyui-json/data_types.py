@@ -61,7 +61,7 @@ def count_workload() -> float:
 
 
 BENCHMARK_WORKFLOW_PATH = os.path.join(
-    os.path.dirname(__file__), "misc", "interior_design_v0.03_linux_benchmark.json"
+    os.path.dirname(__file__), "misc", "interior_design_v0.04_linux_benchmark.json"
 )
 
 def load_benchmark_workflow():
