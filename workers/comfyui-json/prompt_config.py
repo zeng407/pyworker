@@ -20,7 +20,7 @@ styles = {
         ],
     },
     "style_jp2": {
-        "img": "workers/comfyui-json/misc/style_jp2.png",
+        "img": "workers/comfyui-json/misc/style_jp2.jpg",
         "prompts": [
             ("Traditional Japanese interior with warm dark wood tones, natural materials, clean symmetry and quiet order, inspired by wabi-sabi aesthetics", 1.1),
             ("Shoji paper doors, wooden lattice screens, tatami mats, minimal furnishings", 1.0),
